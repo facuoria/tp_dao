@@ -1,5 +1,0 @@
-[
-  { "id": 1, "dni": "32123456", "nombre": "Ana", "apellido": "Gómez", "mail": "ana@example.com" },
-  { "id": 2, "dni": "28999888", "nombre": "Luis", "apellido": "Pérez", "mail": "luis@example.com" },
-  { "id": 3, "dni": "41222333", "nombre": "María", "apellido": "Rojas" }
-]

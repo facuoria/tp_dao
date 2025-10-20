@@ -1,0 +1,27 @@
+# Frontend (Next.js)
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+frontend/dist/
+frontend/.turbo/
+frontend/.vercel/
+
+# Backend (Python) - si lo agregás
+backend/venv/
+backend/.venv/
+backend/__pycache__/
+backend/*.pyc
+backend/.pytest_cache/
+
+# Logs & caches
+*.log
+.eslintcache
+coverage/
+
+# OS / Editor
+.DS_Store
+Thumbs.db
+
+# Env reales (dejá solo .env.example en cada carpeta)
+frontend/.env*
+backend/.env*

@@ -1,0 +1,5 @@
+[
+  { "id": 1, "nombre": "Clínica Médica" },
+  { "id": 2, "nombre": "Pediatría" },
+  { "id": 3, "nombre": "Cardiología" }
+]
