@@ -1,0 +1,9 @@
+{
+  "/especialidades/page": "app/especialidades/page.js",
+  "/favicon.ico/route": "app/favicon.ico/route.js",
+  "/medicos/page": "app/medicos/page.js",
+  "/pacientes/nuevo/page": "app/pacientes/nuevo/page.js",
+  "/pacientes/page": "app/pacientes/page.js",
+  "/page": "app/page.js",
+  "/turnos/page": "app/turnos/page.js"
+}

@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": [],
+  "sections": [
+    {"offset": {"line": 3, "column": 0}, "map": {"version":3,"sources":[],"names":[],"mappings":"","debugId":null}},
+    {"offset": {"line": 15, "column": 0}, "map": {"version":3,"sources":["file:///C:/Users/facuo/OneDrive/Documentos/UTN/4to/DAO/TP-Git/tp_dao/app/page.tsx"],"sourcesContent":["export default function HomePage() {\r\n  return (\r\n    <section className=\"grid gap-4\">\r\n      <div className=\"card\">\r\n        <h1 className=\"text-2xl font-semibold mb-2\">Bienvenido</h1>\r\n        <p className=\"text-sm text-gray-600 dark:text-neutral-400\">\r\n          Esta app usa <b>MSW</b> como API falsa para que puedas desarrollar el frontend\r\n          sin backend. Navegá por las secciones para ver listados y formularios.\r\n        </p>\r\n      </div>\r\n    </section>\r\n  );\r\n}\r\n"],"names":[],"mappings":";;;;;;AAAe,SAAS;IACtB,qBACE,8OAAC;QAAQ,WAAU;kBACjB,cAAA,8OAAC;YAAI,WAAU;;8BACb,8OAAC;oBAAG,WAAU;8BAA8B;;;;;;8BAC5C,8OAAC;oBAAE,WAAU;;wBAA8C;sCAC5C,8OAAC;sCAAE;;;;;;wBAAO;;;;;;;;;;;;;;;;;;AAMjC","debugId":null}}]
+}
