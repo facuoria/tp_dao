@@ -3,6 +3,7 @@ import mysql.connector
 from mysql.connector import errorcode, Error
 from dotenv import load_dotenv
 
+
 load_dotenv()
 
 CFG = {
@@ -37,6 +38,7 @@ def insertar_paciente(dni, nombre, apellido, mail, telefono, fecha_nacimiento):
     params = (dni, nombre, apellido, mail, telefono, fecha_nacimiento)
     conn = None
     cur = None
+
     try:
         conn = get_connection()
         cur = conn.cursor()
@@ -44,15 +46,19 @@ def insertar_paciente(dni, nombre, apellido, mail, telefono, fecha_nacimiento):
         new_id = cur.lastrowid
         conn.commit()
         return new_id
+
     except mysql.connector.Error as e:
         if conn:
             conn.rollback()
         if e.errno == errorcode.ER_DUP_ENTRY:
+            # 👇 mensaje claro para el front
             raise ValueError(f"DNI ya existente: {dni}") from e
         raise
     finally:
-        if cur: cur.close()
-        if conn: conn.close()
+        if cur:
+            cur.close()
+        if conn:
+            conn.close()
 
 def eliminar_paciente_por_id(paciente_id: int) -> int:  # <--- nombre alineado
     sql = "DELETE FROM pacientes WHERE id = %s"
