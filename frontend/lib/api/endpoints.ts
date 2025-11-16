@@ -1,6 +1,8 @@
 // frontend/lib/api/endpoints.ts
 import { api } from './client';
-import type { Page, Paciente, Medico, Especialidad, Turno, Receta, ID } from './dto';
+import type {
+  Page, Paciente, Medico, Especialidad, Turno, Receta, ID, AgendaMedico
+} from './dto';
 
 // PACIENTES
 export const listPacientes = (q = '', page = 1, size = 10) =>
@@ -61,3 +63,29 @@ export const listRecetas = (params: { turnoId?: ID; pacienteId?: ID; medicoId?: 
 
 export const createReceta = (data: Partial<Receta>) =>
   api<Receta>('/api/recetas', { method: 'POST', body: JSON.stringify(data) });
+
+// AGENDA (por médico)
+export const listAgenda = (medicoId: ID) =>
+  api<AgendaMedico[]>(`/api/medicos/${medicoId}/agenda`);
+
+export const createAgendaItem = (
+  medicoId: ID,
+  data: { dia_semana: number; hora_inicio: string; hora_fin: string; duracion_min: number }
+) =>
+  api<AgendaMedico>(`/api/medicos/${medicoId}/agenda`, {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+
+// AGENDA (por id de franja)
+export const getAgendaItem = (id: ID) =>
+  api<AgendaMedico>(`/api/agenda/${id}`);
+
+export const updateAgendaItem = (id: ID, data: Partial<AgendaMedico>) =>
+  api<AgendaMedico>(`/api/agenda/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  });
+
+export const deleteAgendaItem = (id: ID) =>
+  api<void>(`/api/agenda/${id}`, { method: 'DELETE' });

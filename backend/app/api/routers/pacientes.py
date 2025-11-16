@@ -5,7 +5,7 @@ from app.dto.paciente import PacienteCreate, PacienteUpdate, PacienteOut
 router = APIRouter(prefix="/pacientes", tags=["Pacientes"])
 
 @router.get("")
-def list_pacientes(search: str = Query(""), page: int = Query(1, ge=1), size: int = Query(10, ge=1, le=100)):
+def list_pacientes(search: str = Query(""), page: int = Query(1, ge=1), size: int = Query(10, ge=1, le=500)):
     off = (page - 1) * size
     if search:
         s = f"%{search}%"
