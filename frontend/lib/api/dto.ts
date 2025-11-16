@@ -1,4 +1,4 @@
-export type ID = number;
+export type ID = number | string;
 
 export type Especialidad = {
   id: ID;
@@ -45,12 +45,15 @@ export type Turno = {
 export type AgendaMedico = {
   id: ID;
   medico_id: ID;
-  dia_semana: number; // 0..6
-  hora_inicio: string; // "09:00"
-  hora_fin: string;    // "13:00"
+  dia_semana: number;   // 0..6 (0=Lunes)
+  hora_inicio: string;  // "09:00" o "09:00:00"
+  hora_fin: string;     // "13:00" o "13:00:00"
   duracion_min: number;
   created_at?: string;
 };
+
+// Alias opcional para no tocar imports previos
+export type AgendaItem = AgendaMedico;
 
 export type Receta = {
   id: ID;

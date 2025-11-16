@@ -44,7 +44,7 @@ export default function MedicosPage() {
               <th className="px-3 text-center">ID</th>
               <th className="px-3 text-left">Nombre</th>
               <th className="px-3 text-left">Especialidad</th>
-              <th className="px-3 text-right"></th>
+              <th className="px-3 text-right">Acciones</th>  {/* ← título */}
             </tr>
           </thead>
           <tbody>
@@ -54,6 +54,7 @@ export default function MedicosPage() {
                 <td className="px-3 text-left">{m.apellido}, {m.nombre}</td>
                 <td className="px-3 text-left">{esp[m.especialidad_id] || '-'}</td>
                 <td className="px-3 text-right whitespace-nowrap">
+                  <Link className="link mr-3" href={`/medicos/${m.id}/agenda`}>Agenda</Link>
                   <Link className="link mr-3" href={`/medicos/${m.id}`}>Editar</Link>
                   <button
                     className="link text-red-600"
