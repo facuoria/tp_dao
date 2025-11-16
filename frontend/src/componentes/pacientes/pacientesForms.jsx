@@ -122,7 +122,7 @@ export default function PacienteForm() {
   const nombreInvalid = touched.nombre && errors.nombre;
   const apellidoInvalid = touched.apellido && errors.apellido;
   const mailInvalid = touched.mail && errors.mail;
-
+  const today = new Date().toISOString().split("T")[0];
   // ----------------------------
   // RENDER
   // ----------------------------
@@ -171,6 +171,7 @@ export default function PacienteForm() {
                 <input
                   id="dni"
                   name="dni"
+                  type="text"
                   className={`form-control ${
                     dniInvalid
                       ? "is-invalid"
@@ -181,13 +182,31 @@ export default function PacienteForm() {
                   placeholder="12345678"
                   inputMode="numeric"
                   value={form.dni}
-                  onChange={handleChange}
+                  onChange={(e) => {
+                    // Solo acepta caracteres 0-9
+                    const onlyNums = e.target.value.replace(/\D+/g, "");
+                    handleChange({ target: { name: "dni", value: onlyNums } });
+                  }}
+                  onPaste={(e) => {
+                    // Evita pegar letras
+                    const pasted = e.clipboardData.getData("text");
+                    if (!/^\d+$/.test(pasted)) {
+                      e.preventDefault();
+                    }
+                  }}
+                  onKeyDown={(e) => {
+                    // bloquea teclas no numéricas (excepto borrar y navegación)
+                    if (
+                      !/[0-9]/.test(e.key) &&
+                      !["Backspace", "Delete", "ArrowLeft", "ArrowRight", "Tab"].includes(e.key)
+                    ) {
+                      e.preventDefault();
+                    }
+                  }}
                   onBlur={() => markTouched("dni")}
                 />
                 <label htmlFor="dni">DNI *</label>
-                {dniInvalid && (
-                  <div className="invalid-feedback">{errors.dni}</div>
-                )}
+                {dniInvalid && <div className="invalid-feedback">{errors.dni}</div>}
               </div>
 
               {/* Nombre */}
@@ -204,13 +223,28 @@ export default function PacienteForm() {
                   }`}
                   placeholder="Nombre"
                   value={form.nombre}
-                  onChange={handleChange}
+                  onChange={(e) => {
+                    const onlyLetters = e.target.value.replace(/[^a-zA-Z\sáéíóúÁÉÍÓÚñÑ]+/g, "");
+                    handleChange({ target: { name: "nombre", value: onlyLetters } });
+                  }}
+                  onKeyDown={(e) => {
+                    if (
+                      !/[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/.test(e.key) &&
+                      !["Backspace", "Delete", "ArrowLeft", "ArrowRight", "Tab"].includes(e.key)
+                    ) {
+                      e.preventDefault();
+                    }
+                  }}
+                  onPaste={(e) => {
+                    const pasted = e.clipboardData.getData("text");
+                    if (!/^[a-zA-Z\sáéíóúÁÉÍÓÚñÑ]+$/.test(pasted)) {
+                      e.preventDefault();
+                    }
+                  }}
                   onBlur={() => markTouched("nombre")}
                 />
                 <label htmlFor="nombre">Nombre</label>
-                {nombreInvalid && (
-                  <div className="invalid-feedback">{errors.nombre}</div>
-                )}
+                {nombreInvalid && <div className="invalid-feedback">{errors.nombre}</div>}
               </div>
 
               {/* Apellido */}
@@ -227,7 +261,24 @@ export default function PacienteForm() {
                   }`}
                   placeholder="Apellido"
                   value={form.apellido}
-                  onChange={handleChange}
+                  onChange={(e) => {
+                    const onlyLetters = e.target.value.replace(/[^a-zA-Z\sáéíóúÁÉÍÓÚñÑ]+/g, "");
+                    handleChange({ target: { name: "apellido", value: onlyLetters } });
+                  }}
+                  onKeyDown={(e) => {
+                    if (
+                      !/[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/.test(e.key) &&
+                      !["Backspace", "Delete", "ArrowLeft", "ArrowRight", "Tab"].includes(e.key)
+                    ) {
+                      e.preventDefault();
+                    }
+                  }}
+                  onPaste={(e) => {
+                    const pasted = e.clipboardData.getData("text");
+                    if (!/^[a-zA-Z\sáéíóúÁÉÍÓÚñÑ]+$/.test(pasted)) {
+                      e.preventDefault();
+                    }
+                  }}
                   onBlur={() => markTouched("apellido")}
                 />
                 <label htmlFor="apellido">Apellido</label>
@@ -265,10 +316,28 @@ export default function PacienteForm() {
                 <input
                   id="telefono"
                   name="telefono"
+                  type="text"
                   className="form-control"
-                  placeholder="+54 351 ..."
+                  placeholder="3515288730"
                   value={form.telefono}
-                  onChange={handleChange}
+                  onChange={(e) => {
+                    const onlyNums = e.target.value.replace(/\D+/g, ""); // solo números
+                    handleChange({ target: { name: "telefono", value: onlyNums } });
+                  }}
+                  onPaste={(e) => {
+                    const pasted = e.clipboardData.getData("text");
+                    if (!/^\d+$/.test(pasted)) {
+                      e.preventDefault(); // bloquea pegar letras o símbolos
+                    }
+                  }}
+                  onKeyDown={(e) => {
+                    if (
+                      !/[0-9]/.test(e.key) &&
+                      !["Backspace", "Delete", "ArrowLeft", "ArrowRight", "Tab"].includes(e.key)
+                    ) {
+                      e.preventDefault(); // bloquea teclas no numéricas
+                    }
+                  }}
                 />
                 <label htmlFor="telefono">Teléfono</label>
               </div>
@@ -281,11 +350,17 @@ export default function PacienteForm() {
                   name="fecha_nacimiento"
                   className="form-control"
                   value={form.fecha_nacimiento}
-                  onChange={handleChange}
+                  max={today} // 👈 no deja elegir fechas futuras en el datepicker
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    // Si es futura, la ignoramos
+                    if (value && value > today) {
+                      return;
+                    }
+                    handleChange(e);
+                  }}
                 />
-                <label htmlFor="fecha_nacimiento">
-                  Fecha de nacimiento
-                </label>
+                <label htmlFor="fecha_nacimiento">Fecha de nacimiento</label>
               </div>
 
               <div className="d-flex gap-2 mt-3">
