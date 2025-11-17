@@ -66,7 +66,6 @@ button:focus-visible {
   }
 }
 
-
 .slide-down {
   overflow: hidden;
   max-height: 0;
@@ -81,13 +80,13 @@ button:focus-visible {
 
 /* ----- Animación deslizando desde la izquierda ----- */
 .slide-side {
-  transform: translateX(50%);
+  transform: translateX();
   opacity: 0;
   transition: all 0.4s ease;
 }
 
 .slide-side.show {
-  transform: translateX(-50%);
+  transform: translateX();
   opacity: 1;
 }
 
@@ -99,17 +98,84 @@ button:focus-visible {
   }
 }
 
-/* Contenedor animado de la tabla */
-.table-wrapper {
-  transition: transform 0.4s ease;
+
+/* =============================
+   FORM ANIMACIÓN DESKTOP
+   ============================= */
+
+.slide-left {
+  max-width: 0;
+  overflow: hidden;
+  opacity: 0;
+  transform: translateX(-50px);
+  transition:
+    max-width 0.45s ease,
+    opacity 0.35s ease,
+    transform 0.45s ease;
 }
 
-/* Tabla centrada (estado inicial) */
-.shift-center {
+/* Abierto */
+.slide-left.show {
+  max-width: 420px;
+  opacity: 1;
   transform: translateX(0);
 }
 
-/* Tabla movida a la derecha cuando se abre el form */
-.shift-right {
-  transform: translateX(50%); /* Ajustable */
+/* Cerrando */
+.slide-left.closing {
+  max-width: 0;
+  opacity: 0;
+  transform: translateX(-50px);
+}
+
+/* =============================
+   MOBILE: FORM ANIMA DESDE ABAJO
+   ============================= */
+
+@media (max-width: 768px) {
+
+  .slide-left {
+    width: 100%;
+    max-height: 0;
+    max-width: none;
+    transform: translateY(40px);
+    opacity: 0;
+    transition:
+      max-height 0.45s ease,
+      transform 0.45s ease,
+      opacity 0.35s ease;
+  }
+
+  .slide-left.show {
+    max-height: 900px;  /* suficiente para expandir */
+    transform: translateY(0);
+    opacity: 1;
+  }
+
+  .slide-left.closing {
+    max-height: 0;
+    transform: translateY(40px);
+    opacity: 0;
+  }
+
+  /* El contenedor principal se vuelve vertical */
+  .medico-wrapper {
+    flex-direction: column !important;
+    gap: 20px !important;
+    align-items: center !important;
+  }
+
+  /* Tabla centrada y con ancho completo */
+  .table-container-mobile {
+    width: 100% !important;
+    display: flex;
+    justify-content: center;
+  }
+
+  /* Botón centrado y siempre visible */
+  .medico-form-button {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+  }
 }

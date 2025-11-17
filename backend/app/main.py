@@ -130,24 +130,35 @@ def listar_medicos():
 # ---------- INSERTAR MEDICO ----------
 @app.post("/api/medicos", status_code=201)
 def crear_medico(body: dict):
-    # Validacion minima de la matricula
+
     matricula = body.get("matricula")
-    if matricula is None:
-        raise HTTPException(status_code=400, detail="Falta el campo obligatorio: matricula")
+    if not matricula:
+        raise HTTPException(status_code=400, detail="Falta la matrícula")
+
+    nombre = body.get("nombre")
+    apellido = body.get("apellido")
+    mail = body.get("mail")
+    especialidad_id = body.get("especialidad_id")   # <-- EL CORRECTO
+
+    if not especialidad_id:
+        raise HTTPException(status_code=400, detail="Falta seleccionar especialidad")
+
     try:
         new_id = insertar_medicos(
-            body.get("nombre"),
-            body.get("apellido"),
-            body.get("matricula"), 
-            body.get("mail"),
-            body.get("especialidad"),
-            body.get("fecha_nacimiento")
+            nombre,
+            apellido,
+            matricula,
+            mail,             # este "especialidad" sobra, podés eliminarlo de la función
+            especialidad_id
         )
         return {"id": new_id}
+
     except ValueError as ve:
-        raise HTTPException(status_code=400, detail=str(ve))
-    except mysql.connector.Error as e:
-        raise HTTPException(status_code=500, detail="Error al crear paciente")
+        raise HTTPException(status_code=409, detail=str(ve))
+
+    except mysql.connector.Error:
+        raise HTTPException(status_code=500, detail="Error al crear médico")
+
     
 # ----------- BORRAR MEDICO POR ID -------------
 @app.delete("/api/medicos/{medico_id}", status_code=204)

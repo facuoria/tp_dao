@@ -1,172 +1,217 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { API_BASE } from "../../api.js";
+// Ajustá la ruta según tu proyecto:
 import EspecialidadTable from "./especialidadesTabla.jsx";
 
-const EMPTY_FORM = { nombre: "" };
+const EMPTY_FORM = {
+  nombre: "",
+};
 
 export default function EspecialidadForm() {
   const [form, setForm] = useState(EMPTY_FORM);
   const [touched, setTouched] = useState({});
   const [errors, setErrors] = useState({});
-  const [alert, setAlert] = useState(null);
   const [submitting, setSubmitting] = useState(false);
-  const [showForm, setShowForm] = useState(false);
+  const [alert, setAlert] = useState(null);
   const [reloadKey, setReloadKey] = useState(0);
+  const [showForm, setShowForm] = useState(false);
 
-  // ---------------- VALIDACIÓN ----------------
-  const nombreInvalid =
-    touched.nombre && (!form.nombre || form.nombre.trim().length < 2);
+  // --------- VALIDACIÓN ----------
+  const isFormValid = useMemo(() => {
+    return form.nombre.trim().length >= 3 && !submitting;
+  }, [form.nombre, submitting]);
 
-  const validate = () => {
+  function validate() {
     const e = {};
-    if (!form.nombre || form.nombre.trim().length < 2)
-      e.nombre = "El nombre debe tener al menos 2 caracteres.";
+    const nombre = form.nombre.trim();
+
+    if (!nombre) {
+      e.nombre = "El nombre es obligatorio.";
+    } else if (nombre.length < 3) {
+      e.nombre = "El nombre debe tener al menos 3 caracteres.";
+    }
 
     setErrors(e);
     return Object.keys(e).length === 0;
-  };
+  }
 
-  const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+  function markTouched(field) {
+    setTouched((prev) => ({ ...prev, [field]: true }));
+  }
+
+  function handleChange(eLike) {
+    const { name, value } = eLike.target;
+    setForm((prev) => ({ ...prev, [name]: value }));
     setAlert(null);
-  };
+  }
 
-  // ---------------- SUBMIT ----------------
-  const handleSubmit = async (e) => {
+  // ---------- SUBMIT ----------
+  async function handleSubmit(e) {
     e.preventDefault();
     if (!validate()) return;
 
     setSubmitting(true);
+    setAlert(null);
 
     try {
       const res = await fetch(`${API_BASE}/api/especialidades`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ nombre: form.nombre }),
+        body: JSON.stringify({ nombre: form.nombre.trim() }),
       });
 
       if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.detail || "Error al crear especialidad");
+        let msg = "No se pudo guardar la especialidad.";
+        try {
+          const json = await res.json();
+          msg = json.detail || json.message || msg;
+        } catch {}
+        throw new Error(msg);
       }
 
-      setAlert({ ok: true, text: "Especialidad creada correctamente" });
+      const payload = await res.json().catch(() => ({}));
+      const id = payload.id ?? "";
+
+      setAlert({
+        ok: true,
+        text: `Especialidad creada correctamente${id ? ` (ID ${id})` : ""}.`,
+      });
+
       setForm(EMPTY_FORM);
       setTouched({});
       setErrors({});
-      setReloadKey((k) => k + 1);
+      setReloadKey((k) => k + 1); // recargar tabla
     } catch (err) {
-      setAlert({ ok: false, text: err.message });
+      setAlert({
+        ok: false,
+        text:
+          err instanceof Error
+            ? err.message
+            : "Error al guardar la especialidad.",
+      });
     } finally {
       setSubmitting(false);
     }
-  };
+  }
 
+  const nombreInvalid = touched.nombre && errors.nombre;
+
+  // ---------- RENDER ----------
   return (
-  <div className="container py-4">
-    
-    {/* BOTÓN */}
-    <div className="text-center mb-4">
-      <button
-        className="btn btn-primary btn-lg rounded-3 px-4"
-        onClick={() => setShowForm(!showForm)}
-      >
-        {showForm ? "Cerrar formulario" : "Registrar Especialidad"}
-      </button>
-    </div>
+    <div className="d-flex justify-content-center align-items-start gap-5 mt-4">
+      {/* BOTÓN + FORM DESLIZABLE */}
+      <div className="text-center">
+        <button
+          type="button"
+          className="btn btn-primary btn-lg px-4"
+          onClick={() => setShowForm((s) => !s)}
+        >
+          {showForm ? "Cerrar formulario" : "Registrar Especialidad"}
+        </button>
 
-    {/* CONTENEDOR FLEXIBLE */}
-    <div className="d-flex justify-content-center position-relative">
+        {/* FORM QUE APARECE DESDE LA IZQUIERDA */}
+        <div className={`slide-left mt-4 ${showForm ? "show" : ""}`}>
+          <div
+            className="card shadow border-0 rounded-4"
+            style={{ width: "380px" }}
+          >
+            <div className="card-header text-center bg-white border-0">
+              <h2 className="h5 fw-bold mb-1">Registrar Especialidad</h2>
+              <p className="text-muted small mb-0">
+                Ingresá el nombre de la especialidad médica.
+              </p>
+            </div>
 
-      {/* FORMULARIO DESLIZANDO DESDE LA IZQUIERDA */}
-      <div
-        className={`slide-side ${showForm ? "show" : ""}`}
-        style={{ width: "350px", marginRight: "20px" }}
-      >
-        {/* CARD DEL FORM */}
-        <div className="card shadow-lg border-0 rounded-4 mb-4">
-          <div className="card-header bg-white border-0 text-center pt-4 pb-2">
-            <h1 className="h4 fw-bold">Registrar Especialidad</h1>
-            <p className="text-muted small mb-0">
-              Ingresá el nombre de la especialidad médica.
-            </p>
-          </div>
+            <div className="card-body">
+              {alert && (
+                <div
+                  className={`alert ${
+                    alert.ok ? "alert-success" : "alert-danger"
+                  } alert-dismissible fade show`}
+                  role="alert"
+                >
+                  {alert.text}
+                  <button
+                    type="button"
+                    className="btn-close"
+                    onClick={() => setAlert(null)}
+                  />
+                </div>
+              )}
 
-          <div className="card-body px-4 pb-4">
-            {/* ALERTA */}
-            {alert && (
-              <div
-                className={`alert ${
-                  alert.ok ? "alert-success" : "alert-danger"
-                } alert-dismissible fade show`}
+              <form
+                onSubmit={handleSubmit}
+                noValidate
+                className="d-flex flex-column gap-3"
               >
-                {alert.text}
-                <button className="btn-close" onClick={() => setAlert(null)} />
-              </div>
-            )}
+                <div className="form-floating">
+                  <input
+                    name="nombre"
+                    id="nombre"
+                    className={`form-control rounded-3 ${
+                      nombreInvalid
+                        ? "is-invalid"
+                        : touched.nombre && !errors.nombre
+                        ? "is-valid"
+                        : ""
+                    }`}
+                    placeholder="Cardiología"
+                    value={form.nombre}
+                    onChange={(e) => {
+                      const onlyLetters = e.target.value.replace(
+                        /[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g,
+                        ""
+                      );
+                      handleChange({
+                        target: { name: "nombre", value: onlyLetters },
+                      });
+                    }}
+                    onBlur={() => markTouched("nombre")}
+                  />
+                  <label htmlFor="nombre">Nombre *</label>
+                  {nombreInvalid && (
+                    <div className="invalid-feedback">{errors.nombre}</div>
+                  )}
+                </div>
 
-            {/* FORM */}
-            <form onSubmit={handleSubmit} noValidate>
-              <div className="form-floating mb-3">
-                <input
-                  name="nombre"
-                  id="nombre"
-                  className={`form-control rounded-3 ${
-                    nombreInvalid ? "is-invalid" : touched.nombre ? "is-valid" : ""
-                  }`}
-                  placeholder="Cardiología"
-                  value={form.nombre}
-                  onChange={(e) => {
-                    const onlyLetters = e.target.value.replace(
-                      /[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+/g,
-                      ""
-                    );
-                    handleChange({ target: { name: "nombre", value: onlyLetters } });
-                  }}
-                  onBlur={() => setTouched({ ...touched, nombre: true })}
-                />
-                <label htmlFor="nombre">Nombre *</label>
-                {nombreInvalid && (
-                  <div className="invalid-feedback">{errors.nombre}</div>
-                )}
-              </div>
+                <div className="d-flex gap-2 mt-2">
+                  <button
+                    type="submit"
+                    className="btn btn-primary rounded-3 flex-grow-1"
+                    disabled={!isFormValid || submitting}
+                  >
+                    {submitting ? "Guardando..." : "Guardar"}
+                  </button>
 
-              <div className="d-flex gap-2 mt-3">
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  className="btn btn-primary rounded-3 flex-grow-1"
-                >
-                  {submitting ? "Guardando..." : "Guardar"}
-                </button>
-
-                <button
-                  type="button"
-                  className="btn btn-outline-secondary rounded-3"
-                  onClick={() => {
-                    setForm(EMPTY_FORM);
-                    setTouched({});
-                    setErrors({});
-                    setAlert(null);
-                  }}
-                >
-                  Limpiar
-                </button>
-              </div>
-            </form>
+                  <button
+                    type="button"
+                    className="btn btn-outline-secondary rounded-3"
+                    disabled={submitting}
+                    onClick={() => {
+                      setForm(EMPTY_FORM);
+                      setTouched({});
+                      setErrors({});
+                      setAlert(null);
+                    }}
+                  >
+                    Limpiar
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* TABLA — se mueve cuando el form está visible */}
+      {/* TABLA A LA DERECHA (SE MUEVE CON LA MISMA ANIMACIÓN QUE MÉDICOS) */}
       <div
-        className={`table-wrapper ${showForm ? "shift-right" : "shift-center"}`}
-        style={{ width: "600px", position: "absolute", right: "25%" }}
+        className={`table-wrapper ${
+          showForm ? "shift-right" : "shift-center"
+        }`}
+        style={{ width: "600px" }}
       >
         <EspecialidadTable reloadKey={reloadKey} />
       </div>
-
     </div>
-  </div>
-);
+  );
 }

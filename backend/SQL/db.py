@@ -85,11 +85,12 @@ def eliminar_paciente_por_id(paciente_id: int) -> int:  # <--- nombre alineado
 
 #----------- MEDICOS -------------
 
-def insertar_medicos(nombre, apellido, matricula, mail, especialidad, especialidad_id):
+def insertar_medicos(nombre, apellido, matricula, mail, especialidad_id):
     sql = """ 
-        INSERT INTO medicos (nombre, apellido, matricula, mail, especialidad, especialidad_id)
-        VALUES (%s, %s, %s, %s, %s, %s)"""
-    params = (nombre, apellido, matricula, mail, especialidad, especialidad_id)
+        INSERT INTO medicos (nombre, apellido, matricula, mail, especialidad_id)
+        VALUES (%s, %s, %s, %s, %s)
+    """
+    params = (nombre, apellido, matricula, mail, especialidad_id)
     conn = None
     cur = None
     try:
@@ -176,7 +177,7 @@ def eliminar_especialidad_por_id(especialidad_id: int) -> int:
     # Puede ser necesario un except
     finally:
         if cur:
-            cur.close
+            cur.close()
         if conn:
-            conn.close
+            conn.close()
         
