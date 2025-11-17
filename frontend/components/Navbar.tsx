@@ -7,6 +7,7 @@ const tabs = [
   { href: '/', label: 'Inicio' },
   { href: '/pacientes', label: 'Pacientes' },
   { href: '/medicos', label: 'Médicos' },
+  { href: '/agenda', label: 'Agenda' },
   { href: '/especialidades', label: 'Especialidades' },
   { href: '/turnos', label: 'Turnos' },
   { href: '/recetas', label: 'Recetas' },
@@ -19,7 +20,7 @@ export default function Navbar() {
       <div className="container flex items-center h-14 gap-4">
         <div className="font-bold">Turnero Médico</div>
         <ul className="flex gap-3 text-sm">
-          {tabs.map(t => {
+          {tabs.map((t) => {
             const active = pathname === t.href || (t.href !== '/' && pathname.startsWith(t.href));
             return (
               <li key={t.href}>

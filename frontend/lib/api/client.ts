@@ -1,4 +1,4 @@
-// frontend/lib/api/client.ts
+﻿// frontend/lib/api/client.ts
 const USE_MSW = process.env.NEXT_PUBLIC_USE_MSW === '1';
 const API_BASE = (process.env.NEXT_PUBLIC_API_URL || '').replace(/\/$/, ''); // sin "/" final
 
@@ -22,16 +22,22 @@ export async function api<T>(path: string, opts: ApiOptions = {}): Promise<T> {
       .forEach(([k, v]) => url.searchParams.set(k, String(v)));
   }
 
-  const res = await fetch(url.toString(), {
-    method: opts.method ?? 'GET',
-    headers: {
-      ...(opts.body ? { 'Content-Type': 'application/json' } : {}),
-      ...opts.headers,
-    },
-    body: opts.body ?? null,
-    cache: opts.cache ?? 'no-store',
-    // credentials: 'include', // <- si algún día necesitás cookies/sesión
-  });
+  let res: Response;
+  try {
+    res = await fetch(url.toString(), {
+      method: opts.method ?? 'GET',
+      headers: {
+        ...(opts.body ? { 'Content-Type': 'application/json' } : {}),
+        ...opts.headers,
+      },
+      body: opts.body ?? null,
+      cache: opts.cache ?? 'no-store',
+      // credentials: 'include', // <- si algún día necesitás cookies/sesión
+    });
+  } catch (err: any) {
+    const msg = err?.message || 'Error de red';
+    throw new Error(`No se pudo contactar el backend (${url.toString()}): ${msg}`);
+  }
 
   if (!res.ok) {
     const text = await res.text().catch(() => '');
