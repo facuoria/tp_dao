@@ -18,6 +18,7 @@ export default function PacienteForm() {
   const [submitting, setSubmitting] = useState(false);
   const [alert, setAlert] = useState(null);
   const [reloadKey, setReloadKey] = useState(0);
+  const [showForm, setShowForm] = useState(false);
 
   // ----------------------------
   // VALIDACIONES
@@ -127,276 +128,242 @@ export default function PacienteForm() {
   // RENDER
   // ----------------------------
   return (
-    <div
-      className="d-flex flex-column align-items-center justify-content-start py-4 w-50"
-      style={{
-        position: "absolute",
-        left: 0,
-        right: 0,
-        top: 0,
-        margin: "0 auto",
-      }}
-    >
-      <div className="container" style={{ maxWidth: 2000 }}>
-        {/* FORMULARIO */}
-        <div className="card shadow-sm border-0 mb-4">
-          <div className="card-header bg-white border-0 pt-4 pb-0">
-            <h1 className="h5 mb-1">Registrar paciente</h1>
-            <p className="text-muted small mb-3">
-              Completá los datos y presioná <strong>"Guardar paciente"</strong>{" "}
-              para insertarlo en la base de datos.
-            </p>
-          </div>
+  <div className="container py-5">
+    <div className="row justify-content-center">
+      <div className="col-12 col-md-10 col-lg-8 col-xl-7">
 
-          <div className="card-body">
-            {alert && (
-              <div
-                className={`alert ${
-                  alert.ok ? "alert-success" : "alert-danger"
-                } alert-dismissible fade show`}
-                role="alert"
-              >
-                {alert.text}
-                <button
-                  type="button"
-                  className="btn-close"
-                  onClick={() => setAlert(null)}
-                />
-              </div>
-            )}
+        {/* BOTÓN PARA MOSTRAR/OCULTAR FORM */}
+        <div className="text-center mb-4">
+          <button
+            className="btn btn-primary btn-lg px-4 py-2 rounded-3 shadow-sm"
+            onClick={() => setShowForm(!showForm)}
+          >
+            {showForm ? "Cerrar formulario" : "Registrar Paciente"}
+          </button>
+        </div>
 
-            <form onSubmit={handleSubmit} noValidate>
-              {/* DNI */}
-              <div className="form-floating mb-3">
-                <input
-                  id="dni"
-                  name="dni"
-                  type="text"
-                  className={`form-control ${
-                    dniInvalid
-                      ? "is-invalid"
-                      : touched.dni && !errors.dni
-                      ? "is-valid"
-                      : ""
-                  }`}
-                  placeholder="12345678"
-                  inputMode="numeric"
-                  value={form.dni}
-                  onChange={(e) => {
-                    // Solo acepta caracteres 0-9
-                    const onlyNums = e.target.value.replace(/\D+/g, "");
-                    handleChange({ target: { name: "dni", value: onlyNums } });
-                  }}
-                  onPaste={(e) => {
-                    // Evita pegar letras
-                    const pasted = e.clipboardData.getData("text");
-                    if (!/^\d+$/.test(pasted)) {
-                      e.preventDefault();
-                    }
-                  }}
-                  onKeyDown={(e) => {
-                    // bloquea teclas no numéricas (excepto borrar y navegación)
-                    if (
-                      !/[0-9]/.test(e.key) &&
-                      !["Backspace", "Delete", "ArrowLeft", "ArrowRight", "Tab"].includes(e.key)
-                    ) {
-                      e.preventDefault();
-                    }
-                  }}
-                  onBlur={() => markTouched("dni")}
-                />
-                <label htmlFor="dni">DNI *</label>
-                {dniInvalid && <div className="invalid-feedback">{errors.dni}</div>}
-              </div>
-
-              {/* Nombre */}
-              <div className="form-floating mb-3">
-                <input
-                  id="nombre"
-                  name="nombre"
-                  className={`form-control ${
-                    nombreInvalid
-                      ? "is-invalid"
-                      : touched.nombre && !errors.nombre
-                      ? "is-valid"
-                      : ""
-                  }`}
-                  placeholder="Nombre"
-                  value={form.nombre}
-                  onChange={(e) => {
-                    const onlyLetters = e.target.value.replace(/[^a-zA-Z\sáéíóúÁÉÍÓÚñÑ]+/g, "");
-                    handleChange({ target: { name: "nombre", value: onlyLetters } });
-                  }}
-                  onKeyDown={(e) => {
-                    if (
-                      !/[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/.test(e.key) &&
-                      !["Backspace", "Delete", "ArrowLeft", "ArrowRight", "Tab"].includes(e.key)
-                    ) {
-                      e.preventDefault();
-                    }
-                  }}
-                  onPaste={(e) => {
-                    const pasted = e.clipboardData.getData("text");
-                    if (!/^[a-zA-Z\sáéíóúÁÉÍÓÚñÑ]+$/.test(pasted)) {
-                      e.preventDefault();
-                    }
-                  }}
-                  onBlur={() => markTouched("nombre")}
-                />
-                <label htmlFor="nombre">Nombre</label>
-                {nombreInvalid && <div className="invalid-feedback">{errors.nombre}</div>}
-              </div>
-
-              {/* Apellido */}
-              <div className="form-floating mb-3">
-                <input
-                  id="apellido"
-                  name="apellido"
-                  className={`form-control ${
-                    apellidoInvalid
-                      ? "is-invalid"
-                      : touched.apellido && !errors.apellido
-                      ? "is-valid"
-                      : ""
-                  }`}
-                  placeholder="Apellido"
-                  value={form.apellido}
-                  onChange={(e) => {
-                    const onlyLetters = e.target.value.replace(/[^a-zA-Z\sáéíóúÁÉÍÓÚñÑ]+/g, "");
-                    handleChange({ target: { name: "apellido", value: onlyLetters } });
-                  }}
-                  onKeyDown={(e) => {
-                    if (
-                      !/[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/.test(e.key) &&
-                      !["Backspace", "Delete", "ArrowLeft", "ArrowRight", "Tab"].includes(e.key)
-                    ) {
-                      e.preventDefault();
-                    }
-                  }}
-                  onPaste={(e) => {
-                    const pasted = e.clipboardData.getData("text");
-                    if (!/^[a-zA-Z\sáéíóúÁÉÍÓÚñÑ]+$/.test(pasted)) {
-                      e.preventDefault();
-                    }
-                  }}
-                  onBlur={() => markTouched("apellido")}
-                />
-                <label htmlFor="apellido">Apellido</label>
-                {apellidoInvalid && (
-                  <div className="invalid-feedback">{errors.apellido}</div>
-                )}
-              </div>
-
-              {/* Mail */}
-              <div className="form-floating mb-3">
-                <input
-                  id="mail"
-                  type="email"
-                  name="mail"
-                  className={`form-control ${
-                    mailInvalid
-                      ? "is-invalid"
-                      : touched.mail && !errors.mail
-                      ? "is-valid"
-                      : ""
-                  }`}
-                  placeholder="correo@ejemplo.com"
-                  value={form.mail}
-                  onChange={handleChange}
-                  onBlur={() => markTouched("mail")}
-                />
-                <label htmlFor="mail">Correo electrónico</label>
-                {mailInvalid && (
-                  <div className="invalid-feedback">{errors.mail}</div>
-                )}
-              </div>
-
-              {/* Teléfono */}
-              <div className="form-floating mb-3">
-                <input
-                  id="telefono"
-                  name="telefono"
-                  type="text"
-                  className="form-control"
-                  placeholder="3515288730"
-                  value={form.telefono}
-                  onChange={(e) => {
-                    const onlyNums = e.target.value.replace(/\D+/g, ""); // solo números
-                    handleChange({ target: { name: "telefono", value: onlyNums } });
-                  }}
-                  onPaste={(e) => {
-                    const pasted = e.clipboardData.getData("text");
-                    if (!/^\d+$/.test(pasted)) {
-                      e.preventDefault(); // bloquea pegar letras o símbolos
-                    }
-                  }}
-                  onKeyDown={(e) => {
-                    if (
-                      !/[0-9]/.test(e.key) &&
-                      !["Backspace", "Delete", "ArrowLeft", "ArrowRight", "Tab"].includes(e.key)
-                    ) {
-                      e.preventDefault(); // bloquea teclas no numéricas
-                    }
-                  }}
-                />
-                <label htmlFor="telefono">Teléfono</label>
-              </div>
-
-              {/* Fecha */}
-              <div className="form-floating mb-3">
-                <input
-                  id="fecha_nacimiento"
-                  type="date"
-                  name="fecha_nacimiento"
-                  className="form-control"
-                  value={form.fecha_nacimiento}
-                  max={today} // 👈 no deja elegir fechas futuras en el datepicker
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    // Si es futura, la ignoramos
-                    if (value && value > today) {
-                      return;
-                    }
-                    handleChange(e);
-                  }}
-                />
-                <label htmlFor="fecha_nacimiento">Fecha de nacimiento</label>
-              </div>
-
-              <div className="d-flex gap-2 mt-3">
-                <button
-                  type="submit"
-                  className="btn btn-dark flex-grow-1"
-                  disabled={!isFormValid}
-                >
-                  {submitting ? "Guardando..." : "Guardar paciente"}
-                </button>
-
-                <button
-                  type="button"
-                  className="btn btn-outline-secondary"
-                  disabled={submitting}
-                  onClick={() => {
-                    setForm(EMPTY_FORM);
-                    setTouched({});
-                    setErrors({});
-                    setAlert(null);
-                  }}
-                >
-                  Limpiar
-                </button>
-              </div>
-
-              <p className="form-text text-muted mt-2">
-                Los campos marcados con * son obligatorios.
+        {/* FORMULARIO CON ANIMACIÓN */}
+        <div className={`slide-down ${showForm ? "show" : ""}`}>
+          <div className="card border-0 shadow-lg rounded-4 mb-4">
+            <div className="card-header bg-white border-0 text-center pt-4 pb-2">
+              <h1 className="h4 mb-1 fw-bold">Registrar paciente</h1>
+              <p className="text-muted small mb-0">
+                Completá los datos y presioná <strong>"Guardar paciente"</strong>.
               </p>
-            </form>
+            </div>
+
+            <div className="card-body px-4 pb-4">
+              {alert && (
+                <div
+                  className={`alert ${
+                    alert.ok ? "alert-success" : "alert-danger"
+                  } alert-dismissible fade show`}
+                >
+                  {alert.text}
+                  <button
+                    className="btn-close"
+                    onClick={() => setAlert(null)}
+                  />
+                </div>
+              )}
+
+              {/* FORMULARIO (solo 1 form, no anidar) */}
+              <form onSubmit={handleSubmit} noValidate>
+                <div className="row g-3">
+
+                  {/* DNI */}
+                  <div className="col-12">
+                    <div className="form-floating">
+                      <input
+                        id="dni"
+                        name="dni"
+                        type="text"
+                        className={`form-control rounded-3 ${
+                          dniInvalid
+                            ? "is-invalid"
+                            : touched.dni && !errors.dni
+                            ? "is-valid"
+                            : ""
+                        }`}
+                        placeholder="12345678"
+                        inputMode="numeric"
+                        value={form.dni}
+                        onChange={(e) => {
+                          const onlyNums = e.target.value.replace(/\D+/g, "");
+                          handleChange({ target: { name: "dni", value: onlyNums } });
+                        }}
+                      />
+                      <label htmlFor="dni">DNI *</label>
+                      {dniInvalid && (
+                        <div className="invalid-feedback">{errors.dni}</div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* NOMBRE */}
+                  <div className="col-md-6">
+                    <div className="form-floating">
+                      <input
+                        id="nombre"
+                        name="nombre"
+                        className={`form-control rounded-3 ${
+                          nombreInvalid
+                            ? "is-invalid"
+                            : touched.nombre && !errors.nombre
+                            ? "is-valid"
+                            : ""
+                        }`}
+                        placeholder="Nombre"
+                        value={form.nombre}
+                        onChange={(e) => {
+                          const onlyLetters =
+                            e.target.value.replace(/[^a-zA-Z\sáéíóúÁÉÍÓÚñÑ]+/g, "");
+                          handleChange({
+                            target: { name: "nombre", value: onlyLetters },
+                          });
+                        }}
+                      />
+                      <label htmlFor="nombre">Nombre</label>
+                      {nombreInvalid && (
+                        <div className="invalid-feedback">{errors.nombre}</div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* APELLIDO */}
+                  <div className="col-md-6">
+                    <div className="form-floating">
+                      <input
+                        id="apellido"
+                        name="apellido"
+                        className={`form-control rounded-3 ${
+                          apellidoInvalid
+                            ? "is-invalid"
+                            : touched.apellido && !errors.apellido
+                            ? "is-valid"
+                            : ""
+                        }`}
+                        placeholder="Apellido"
+                        value={form.apellido}
+                        onChange={(e) => {
+                          const onlyLetters =
+                            e.target.value.replace(/[^a-zA-Z\sáéíóúÁÉÍÓÚñÑ]+/g, "");
+                          handleChange({
+                            target: { name: "apellido", value: onlyLetters },
+                          });
+                        }}
+                      />
+                      <label htmlFor="apellido">Apellido</label>
+                      {apellidoInvalid && (
+                        <div className="invalid-feedback">{errors.apellido}</div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* EMAIL */}
+                  <div className="col-12">
+                    <div className="form-floating">
+                      <input
+                        id="mail"
+                        type="email"
+                        name="mail"
+                        className={`form-control rounded-3 ${
+                          mailInvalid
+                            ? "is-invalid"
+                            : touched.mail && !errors.mail
+                            ? "is-valid"
+                            : ""
+                        }`}
+                        placeholder="correo@ejemplo.com"
+                        value={form.mail}
+                        onChange={handleChange}
+                      />
+                      <label htmlFor="mail">Correo electrónico</label>
+                      {mailInvalid && (
+                        <div className="invalid-feedback">{errors.mail}</div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* TELEFONO */}
+                  <div className="col-md-6">
+                    <div className="form-floating">
+                      <input
+                        id="telefono"
+                        name="telefono"
+                        type="text"
+                        className="form-control rounded-3"
+                        placeholder="3515288730"
+                        value={form.telefono}
+                        onChange={(e) => {
+                          const onlyNums = e.target.value.replace(/\D+/g, "");
+                          handleChange({
+                            target: { name: "telefono", value: onlyNums },
+                          });
+                        }}
+                      />
+                      <label htmlFor="telefono">Teléfono</label>
+                    </div>
+                  </div>
+
+                  {/* FECHA */}
+                  <div className="col-md-6">
+                    <div className="form-floating">
+                      <input
+                        id="fecha_nacimiento"
+                        type="date"
+                        name="fecha_nacimiento"
+                        className="form-control rounded-3"
+                        value={form.fecha_nacimiento}
+                        max={today}
+                        onChange={(e) => {
+                          const v = e.target.value;
+                          if (v && v > today) return;
+                          handleChange(e);
+                        }}
+                      />
+                      <label htmlFor="fecha_nacimiento">
+                        Fecha de nacimiento
+                      </label>
+                    </div>
+                  </div>
+
+                  {/* BOTONES */}
+                  <div className="col-12 d-flex flex-column flex-sm-row gap-2 mt-3">
+                    <button
+                      type="submit"
+                      className="btn btn-primary btn-lg rounded-3 flex-grow-1"
+                      disabled={!isFormValid}
+                    >
+                      {submitting ? "Guardando..." : "Guardar paciente"}
+                    </button>
+
+                    <button
+                      type="button"
+                      className="btn btn-outline-secondary btn-lg rounded-3"
+                      disabled={submitting}
+                      onClick={() => {
+                        setForm(EMPTY_FORM);
+                        setTouched({});
+                        setErrors({});
+                        setAlert(null);
+                      }}
+                    >
+                      Limpiar
+                    </button>
+                  </div>
+
+                </div>
+              </form>
+            </div>
           </div>
         </div>
 
-        {/* TABLA DE PACIENTES */}
+        {/* TABLA (siempre visible) */}
         <PacienteTable reloadKey={reloadKey} />
+
       </div>
     </div>
-  );
+  </div>
+);
 }

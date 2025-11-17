@@ -24,8 +24,7 @@ a:hover {
 
 body {
   margin: 0;
-  display: flex;
-  place-items: center;
+  background-color: #ffffff; /* o lo que quieras */
   min-width: 320px;
   min-height: 100vh;
 }
@@ -65,4 +64,17 @@ button:focus-visible {
   button {
     background-color: #f9f9f9;
   }
+}
+
+
+.slide-down {
+  overflow: hidden;
+  max-height: 0;
+  opacity: 0;
+  transition: max-height 0.45s ease, opacity 0.35s ease;
+}
+
+.slide-down.show {
+  max-height: 900px; /* valor alto para permitir expandir */
+  opacity: 1;
 }

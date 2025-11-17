@@ -47,79 +47,82 @@ function PacienteTable({ reloadKey }) {
   }, [reloadKey]);
 
   return (
-    <div className="card shadow-sm border-0 mt-4">
-      <div className="card-header bg-white border-0 pt-3 pb-0 d-flex justify-content-between align-items-center">
-        <div>
-          <h2 className="h5 mb-1">Pacientes registrados</h2>
-          <p className="text-muted small mb-2">
-            Listado de todos los pacientes en la base de datos.
-          </p>
-        </div>
-        <button
-          type="button"
-          className="btn btn-outline-secondary btn-sm"
-          onClick={loadPacientes}
-        >
-          Recargar
-        </button>
+  <div className="card shadow-lg border-0 rounded-4 mt-4">
+    <div className="card-header bg-white border-0 pt-4 pb-2 d-flex justify-content-between align-items-center rounded-top-4">
+      <div>
+        <h2 className="h5 fw-bold mb-1">Pacientes registrados</h2>
+        <p className="text-muted small mb-0">
+          Listado de todos los pacientes almacenados.
+        </p>
       </div>
 
-      <div className="card-body p-0">
-        {loading && (
-          <p className="text-center text-muted py-3 mb-0">
-            Cargando pacientes…
-          </p>
-        )}
-
-        {error && !loading && (
-          <p className="text-center text-danger py-3 mb-0">
-            Error: {error}
-          </p>
-        )}
-
-        {!loading && !error && pacientes.length === 0 && (
-          <p className="text-center text-muted py-3 mb-0">
-            No hay pacientes cargados.
-          </p>
-        )}
-
-        {!loading && !error && pacientes.length > 0 && (
-          <div className="table-responsive">
-            <table className="table table-striped table-hover mb-0 align-middle">
-              <thead className="table-light">
-                <tr>
-                  <th>ID</th>
-                  <th>DNI</th>
-                  <th>Nombre</th>
-                  <th>Apellido</th>
-                  <th className="text-center">Acciones</th>
-                </tr>
-              </thead>
-              <tbody>
-                {pacientes.map((p) => (
-                  <tr key={p.id}>
-                    <td>{p.id}</td>
-                    <td>{p.dni}</td>
-                    <td>{p.nombre}</td>
-                    <td>{p.apellido}</td>
-
-                    <td className="text-center">
-                      <button
-                        className="btn btn-sm btn-danger"
-                        onClick={() => deletePaciente(p.id)}
-                      >
-                        Eliminar
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
+      <button
+        type="button"
+        className="btn btn-outline-primary btn-sm px-3 rounded-3"
+        onClick={loadPacientes}
+      >
+        Recargar
+      </button>
     </div>
-  );
+
+    <div className="card-body p-0">
+      {loading && (
+        <div className="py-4 text-center text-muted">
+          <div className="spinner-border spinner-border-sm me-2"></div>
+          Cargando pacientes…
+        </div>
+      )}
+
+      {error && !loading && (
+        <div className="py-4 text-center text-danger fw-semibold">
+          Error: {error}
+        </div>
+      )}
+
+      {!loading && !error && pacientes.length === 0 && (
+        <div className="py-4 text-center text-muted">
+          No hay pacientes cargados.
+        </div>
+      )}
+
+      {!loading && !error && pacientes.length > 0 && (
+        <div className="table-responsive">
+          <table className="table table-hover table-striped align-middle mb-0">
+            <thead className="table-light">
+              <tr className="text-center text-muted">
+                <th style={{ width: "6%" }}>ID</th>
+                <th style={{ width: "12%" }}>DNI</th>
+                <th style={{ width: "20%" }}>Nombre</th>
+                <th style={{ width: "20%" }}>Apellido</th>
+                <th style={{ width: "12%" }}>Acciones</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              {pacientes.map((p) => (
+                <tr key={p.id} className="text-center">
+                  <td className="fw-bold">{p.id}</td>
+                  <td>{p.dni}</td>
+                  <td>{p.nombre}</td>
+                  <td>{p.apellido}</td>
+
+                  <td>
+                    <button
+                      className="btn btn-danger btn-sm rounded-3 px-3 shadow-sm"
+                      onClick={() => deletePaciente(p.id)}
+                    >
+                      Eliminar
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  </div>
+);
 }
 
 export default PacienteTable;
