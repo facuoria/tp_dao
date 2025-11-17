@@ -90,7 +90,6 @@ function PacienteTable({ reloadKey }) {
           <table className="table table-hover table-striped align-middle mb-0">
             <thead className="table-light">
               <tr className="text-center text-muted">
-                <th style={{ width: "6%" }}>ID</th>
                 <th style={{ width: "12%" }}>DNI</th>
                 <th style={{ width: "20%" }}>Nombre</th>
                 <th style={{ width: "20%" }}>Apellido</th>
@@ -101,7 +100,6 @@ function PacienteTable({ reloadKey }) {
             <tbody>
               {pacientes.map((p) => (
                 <tr key={p.id} className="text-center">
-                  <td className="fw-bold">{p.id}</td>
                   <td>{p.dni}</td>
                   <td>{p.nombre}</td>
                   <td>{p.apellido}</td>

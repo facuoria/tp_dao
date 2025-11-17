@@ -2,7 +2,15 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 import mysql.connector
 from mysql.connector import errorcode
-from .db import get_connection, insertar_paciente, eliminar_paciente_por_id, insertar_medicos, eliminar_medico_por_id, insertar_especialidad, eliminar_especialidad_por_id
+from SQL.db import (
+    get_connection,
+    insertar_paciente,
+    eliminar_paciente_por_id,
+    insertar_medicos,
+    eliminar_medico_por_id,
+    insertar_especialidad,
+    eliminar_especialidad_por_id,
+)
 from fastapi.responses import RedirectResponse
 
 #                  ^^^^^^^^ import relativo y nombre de función alineado
@@ -142,7 +150,7 @@ def crear_medico(body: dict):
         raise HTTPException(status_code=500, detail="Error al crear paciente")
     
 # ----------- BORRAR MEDICO POR ID -------------
-@app.delete("api/medicos/{medico_id}", status_code=204)
+@app.delete("/api/medicos/{medico_id}", status_code=204)
 def borrar_paciente(medico_id: int):
     try:
         borradas = eliminar_medico_por_id(medico_id)
@@ -155,7 +163,7 @@ def borrar_paciente(medico_id: int):
         raise HTTPException(status_code=500, detail="Error al borrar medico")
     
 #------------ VISUALIZAR ESPECIALIDAD ---------------
-@app.get("api/especialidades")
+@app.get("/api/especialidades")
 def listar_especialidades():
     sql = """SELECT id, nombre
              FROM especialidades"""
@@ -164,7 +172,7 @@ def listar_especialidades():
         return cur.fetchall()
 
 #------------ INSERTAR ESPECIALIDAD -----------------
-@app.post("api/especialidades", status_code=201)
+@app.post("/api/especialidades", status_code=201)
 def crear_especialidades(body: dict):
     nombre = body.get("nombre")
     if not nombre or not nombre.strip():
@@ -185,7 +193,7 @@ def crear_especialidades(body: dict):
     
  #------------ BORRAR ESPECIALIDAD ------------------   
     
-@app.delete("api/especialidades/{especialidad_id}", status_code=204)
+@app.delete("/api/especialidades/{especialidad_id}", status_code=204)
 def borrar_paciente(especialidad_id: int):
     try:
         borradas = eliminar_especialidad_por_id(especialidad_id)

@@ -78,3 +78,38 @@ button:focus-visible {
   max-height: 900px; /* valor alto para permitir expandir */
   opacity: 1;
 }
+
+/* ----- Animación deslizando desde la izquierda ----- */
+.slide-side {
+  transform: translateX(50%);
+  opacity: 0;
+  transition: all 0.4s ease;
+}
+
+.slide-side.show {
+  transform: translateX(-50%);
+  opacity: 1;
+}
+
+/* Para móviles (se vuelve vertical) */
+@media (max-width: 768px) {
+  .slide-left,
+  .slide-left.show {
+    max-width: 100%;
+  }
+}
+
+/* Contenedor animado de la tabla */
+.table-wrapper {
+  transition: transform 0.4s ease;
+}
+
+/* Tabla centrada (estado inicial) */
+.shift-center {
+  transform: translateX(0);
+}
+
+/* Tabla movida a la derecha cuando se abre el form */
+.shift-right {
+  transform: translateX(50%); /* Ajustable */
+}
