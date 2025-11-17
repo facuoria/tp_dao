@@ -23,6 +23,8 @@ from .especialidad import (
 )
 
 from .agenda import (
+    AgendaCreate,
+    AgendaUpdate,
     AgendaOut,
 )
 
@@ -48,7 +50,7 @@ __all__ = [
     # especialidades
     "EspecialidadCreate", "EspecialidadOut",
     # agenda
-    "AgendaOut",
+    "AgendaCreate", "AgendaUpdate", "AgendaOut",
     # turnos
     "TurnoCreate", "TurnoUpdate", "TurnoEstado", "TurnoOut",
     # recetas

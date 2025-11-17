@@ -29,6 +29,30 @@ const readJsonObj = async (req: Request): Promise<Record<string, unknown>> => {
   }
 };
 
+const TIME_REGEX = /^([01]\d|2[0-3]):[0-5]\d$/;
+const normalizeTime = (t: unknown) => {
+  const [hh = '0', mm = '0'] = String(t ?? '').split(':');
+  const pad = (n: number) => String(Number(n) || 0).padStart(2, '0');
+  return `${pad(Number(hh))}:${pad(Number(mm))}`;
+};
+const toMinutes = (t: string) => {
+  const [hh = '0', mm = '0'] = t.split(':');
+  return Number(hh) * 60 + Number(mm);
+};
+
+function validateAgendaInput(input: { dia_semana: number; hora_inicio: string; hora_fin: string; duracion_min: number; }) {
+  if (!Number.isInteger(input.dia_semana) || input.dia_semana < 0 || input.dia_semana > 6)
+    return 'dia_semana debe estar entre 0 y 6';
+  if (!TIME_REGEX.test(input.hora_inicio) || !TIME_REGEX.test(input.hora_fin))
+    return 'hora_inicio y hora_fin deben estar en formato HH:MM';
+  if (input.duracion_min <= 0) return 'duracion_min debe ser mayor a 0';
+  if (toMinutes(input.hora_inicio) >= toMinutes(input.hora_fin))
+    return 'hora_fin debe ser mayor a hora_inicio';
+  if (input.duracion_min > toMinutes(input.hora_fin) - toMinutes(input.hora_inicio))
+    return 'duracion_min debe caber entre las horas indicadas';
+  return '';
+}
+
 
 // Helpers
 function pageOf<T>(rows: T[], page = 1, size = 10) {
@@ -43,7 +67,9 @@ function withinSchedule(medico_id: ID, iso: string, duracion_min: number) {
   const hh = d.getHours(), mm = d.getMinutes();
   const start = hm(hh, mm);
 
-  const seg = agenda.filter(a=>a.medico_id===medico_id && a.dia_semana===day);
+  const seg = agenda
+    .filter(a=>a.medico_id===medico_id && a.dia_semana===day)
+    .map(a => ({ ...a, hora_inicio: normalizeTime(a.hora_inicio), hora_fin: normalizeTime(a.hora_fin) }));
   if (!seg.length) return false;
 
   const addMin = (iso:string, min:number) => new Date(new Date(iso).getTime() + min*60000).toISOString();
@@ -134,8 +160,75 @@ export const handlers = [
     return new HttpResponse(null, { status:204 });
   }),
   http.get('/api/medicos/:id/agenda', ({ params }) => {
-    const rows = agenda.filter(a=>a.medico_id===Number(params.id));
+    const medico_id = Number(params.id);
+    const rows = agenda
+      .filter(a=>a.medico_id===medico_id)
+      .map(a => ({ ...a, hora_inicio: normalizeTime(a.hora_inicio), hora_fin: normalizeTime(a.hora_fin) }))
+      .sort((a, b) => a.dia_semana - b.dia_semana || a.hora_inicio.localeCompare(b.hora_inicio));
     return HttpResponse.json(rows);
+  }),
+  http.post('/api/medicos/:id/agenda', async ({ params, request }) => {
+    const medico_id = Number(params.id);
+    if (!medicos.some(m => m.id === medico_id)) {
+      return HttpResponse.json({ detail: 'Médico no encontrado' }, { status: 404 });
+    }
+    const body = await readJsonObj(request);
+    const payload = {
+      medico_id,
+      dia_semana: Number((body as any).dia_semana),
+      hora_inicio: normalizeTime((body as any).hora_inicio),
+      hora_fin: normalizeTime((body as any).hora_fin),
+      duracion_min: Number((body as any).duracion_min),
+    };
+    const error = validateAgendaInput(payload);
+    if (error) return HttpResponse.json({ detail: error }, { status: 400 });
+    const dup = agenda.some(a =>
+      a.medico_id === medico_id &&
+      a.dia_semana === payload.dia_semana &&
+      normalizeTime(a.hora_inicio) === payload.hora_inicio
+    );
+    if (dup) return HttpResponse.json({ detail: 'Ya existe una franja en ese horario' }, { status: 409 });
+    const row = { id: nextId(agenda), created_at: new Date().toISOString(), ...payload };
+    agenda.push(row as any);
+    return HttpResponse.json(row, { status: 201 });
+  }),
+  http.get('/api/agenda/:id', ({ params }) => {
+    const row = agenda.find(a=>a.id===Number(params.id));
+    return row
+      ? HttpResponse.json({ ...row, hora_inicio: normalizeTime(row.hora_inicio), hora_fin: normalizeTime(row.hora_fin) })
+      : HttpResponse.json({ detail: 'Not found' }, { status: 404 });
+  }),
+  http.put('/api/agenda/:id', async ({ params, request }) => {
+    const id = Number(params.id);
+    const idx = agenda.findIndex(a=>a.id===id);
+    if (idx < 0) return HttpResponse.json({ detail: 'Not found' }, { status: 404 });
+
+    const body = await readJsonObj(request);
+    const payload = {
+      ...agenda[idx],
+      dia_semana: Number((body as any).dia_semana ?? agenda[idx].dia_semana),
+      hora_inicio: normalizeTime((body as any).hora_inicio ?? agenda[idx].hora_inicio),
+      hora_fin: normalizeTime((body as any).hora_fin ?? agenda[idx].hora_fin),
+      duracion_min: Number((body as any).duracion_min ?? agenda[idx].duracion_min),
+    };
+    const error = validateAgendaInput(payload);
+    if (error) return HttpResponse.json({ detail: error }, { status: 400 });
+    const dup = agenda.some(a =>
+      a.id !== id &&
+      a.medico_id === payload.medico_id &&
+      a.dia_semana === payload.dia_semana &&
+      normalizeTime(a.hora_inicio) === payload.hora_inicio
+    );
+    if (dup) return HttpResponse.json({ detail: 'Ya existe una franja en ese horario' }, { status: 409 });
+
+    agenda[idx] = payload as any;
+    return HttpResponse.json(agenda[idx]);
+  }),
+  http.delete('/api/agenda/:id', ({ params }) => {
+    const id = Number(params.id);
+    if (!agenda.some(a=>a.id===id)) return HttpResponse.json({ detail: 'Not found' }, { status: 404 });
+    agenda = agenda.filter(a=>a.id!==id);
+    return new HttpResponse(null, { status: 204 });
   }),
 
   // Especialidades

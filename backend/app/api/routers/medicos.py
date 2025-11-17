@@ -1,6 +1,7 @@
 from fastapi import APIRouter, HTTPException, Query
 from app.core.db import fetch_all, fetch_one, execute
 from app.dto.medico import MedicoCreate, MedicoUpdate, MedicoOut
+from app.dto import AgendaCreate, AgendaOut
 
 router = APIRouter(prefix="/medicos", tags=["Medicos"])
 
@@ -58,3 +59,34 @@ def get_agenda(id: int):
     FROM agenda_medico WHERE medicos_id=%s ORDER BY dia_semana, hora_inicio
     """
     return fetch_all(sql, (id,))
+
+def _validate_agenda_duplicate(medico_id: int, dia_semana: int, hora_inicio: str):
+    dup = fetch_one(
+        "SELECT id FROM agenda_medico WHERE medicos_id=%s AND dia_semana=%s AND hora_inicio=%s",
+        (medico_id, dia_semana, hora_inicio)
+    )
+    if dup:
+        raise HTTPException(409, "Ya existe una franja en ese horario")
+
+def _fetch_agenda_row(id: int) -> AgendaOut:
+    row = fetch_one(
+        """SELECT id, medicos_id AS medico_id, dia_semana,
+                  DATE_FORMAT(hora_inicio, '%H:%i') AS hora_inicio,
+                  DATE_FORMAT(hora_fin, '%H:%i') AS hora_fin,
+                  duracion_min
+           FROM agenda_medico WHERE id=%s""",
+        (id,)
+    )
+    if not row: raise HTTPException(404, "Not found")
+    return row
+
+@router.post("/{id}/agenda", response_model=AgendaOut, status_code=201)
+def create_agenda_item(id: int, body: AgendaCreate):
+    if not fetch_one("SELECT id FROM medicos WHERE id=%s", (id,)):
+        raise HTTPException(404, "Not found")
+    _validate_agenda_duplicate(id, body.dia_semana, body.hora_inicio)
+    new_id = execute(
+        "INSERT INTO agenda_medico (medicos_id, dia_semana, hora_inicio, hora_fin, duracion_min) VALUES (%s,%s,%s,%s,%s)",
+        (id, body.dia_semana, body.hora_inicio, body.hora_fin, body.duracion_min)
+    )
+    return _fetch_agenda_row(new_id)

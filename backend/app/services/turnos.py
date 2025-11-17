@@ -19,10 +19,23 @@ def within_schedule(medico_id: int, fecha_hora, duracion_min: int) -> bool:
         (medico_id, dia),
     )
     fin_nuevo = fecha_hora + timedelta(minutes=duracion_min)
+
+    def _to_time(val):
+        # MySQL TIME puede venir como datetime.timedelta o datetime.time
+        if hasattr(val, "seconds"):
+            total_sec = val.seconds
+            return (total_sec // 3600, (total_sec % 3600) // 60)
+        if hasattr(val, "hour"):
+            return (val.hour, val.minute)
+        return (0, 0)
+
     for r in rows:
-        hi = r["hora_inicio"]; hf = r["Hora_fin"] if "Hora_fin" in r else r["hora_fin"]
-        start = fecha_hora.replace(hour=hi.hour, minute=hi.minute, second=0, microsecond=0)
-        end   = fecha_hora.replace(hour=hf.hour, minute=hf.minute, second=0, microsecond=0)
+        hi_raw = r.get("hora_inicio")
+        hf_raw = r.get("hora_fin") or r.get("Hora_fin")
+        hh_i, mm_i = _to_time(hi_raw)
+        hh_f, mm_f = _to_time(hf_raw)
+        start = fecha_hora.replace(hour=hh_i, minute=mm_i, second=0, microsecond=0)
+        end   = fecha_hora.replace(hour=hh_f, minute=mm_f, second=0, microsecond=0)
         if fecha_hora >= start and fin_nuevo <= end:
             return True
     return False
