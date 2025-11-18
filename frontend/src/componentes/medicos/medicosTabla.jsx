@@ -1,106 +1,95 @@
 import { useEffect, useState } from "react";
 
-export default function MedicoTable({ reloadKey }) {
+export default function MedicosTabla({ reloadKey }) {
   const [medicos, setMedicos] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // ===== CARGAR MÉDICOS =====
   const loadMedicos = () => {
     setLoading(true);
     setError(null);
 
     fetch("http://localhost:8000/api/medicos")
-      .then((res) => {
-        if (!res.ok) throw new Error("Error al cargar médicos");
-        return res.json();
-      })
-      .then((data) => {
-        setMedicos(data);
-      })
-      .catch((err) => setError(err.message))
+      .then((res) => res.json())
+      .then(setMedicos)
+      .catch(() => setError("Error al cargar médicos"))
       .finally(() => setLoading(false));
   };
 
-  // Cargar al inicio y cuando reloadKey cambia
   useEffect(() => {
     loadMedicos();
   }, [reloadKey]);
 
-  // ===== BORRAR MÉDICO =====
   const deleteMedico = (id) => {
     if (!confirm("¿Seguro que querés eliminar este médico?")) return;
 
     fetch(`http://localhost:8000/api/medicos/${id}`, { method: "DELETE" })
       .then((res) => {
-        if (res.status === 204) {
-          loadMedicos();
-        } else {
-          return res.json().then((data) => {
-            alert(data.detail || "Error al borrar médico");
-          });
-        }
+        if (res.status === 204) loadMedicos();
       })
-      .catch(() => alert("Error de conexión al eliminar médico"));
+      .catch(() => alert("Error al eliminar médico"));
   };
 
   return (
-    <div className="card shadow-sm border-0" style={{ width: "700px" }}>
-      <div className="card-header bg-white border-0 pt-3 pb-1 d-flex justify-content-between align-items-center">
+    <div
+      className="card shadow-lg border-0 rounded-4 mt-4 mx-auto"
+      style={{ maxWidth: "900px" }}
+    >
+      <div className="card-header bg-white border-0 pt-4 pb-2 d-flex justify-content-between">
         <div>
-          <h2 className="h5 mb-1">Médicos registrados</h2>
-          <p className="text-muted small mb-0">
+          <h2 className="h5 fw-bold mb-1">Médicos registrados</h2>
+          <p className="text-muted small">
             Listado de todos los médicos cargados.
           </p>
         </div>
-
-        <button
-          className="btn btn-outline-secondary btn-sm"
-          onClick={loadMedicos}
-        >
+        <button className="btn btn-outline-primary btn-sm" onClick={loadMedicos}>
           Recargar
         </button>
       </div>
 
       <div className="card-body p-0">
         {loading && (
-          <p className="text-center text-muted py-3 mb-0">Cargando médicos…</p>
+          <p className="text-center text-muted py-4 mb-0">
+            Cargando médicos…
+          </p>
         )}
 
         {error && (
-          <p className="text-center text-danger py-3 mb-0">Error: {error}</p>
+          <p className="text-center text-danger py-4 mb-0">
+            {error}
+          </p>
         )}
 
         {!loading && !error && medicos.length === 0 && (
-          <p className="text-center text-muted py-3 mb-0">
+          <p className="text-center text-muted py-4 mb-0">
             No hay médicos cargados.
           </p>
         )}
 
         {!loading && !error && medicos.length > 0 && (
           <div className="table-responsive">
-            <table className="table table-hover table-striped mb-0 align-middle">
+            <table className="table table-hover table-striped">
               <thead className="table-light">
-                <tr>
+                <tr className="text-center">
                   <th>Nombre</th>
                   <th>Apellido</th>
                   <th>Matrícula</th>
                   <th>Especialidad</th>
-                  <th className="text-center">Acciones</th>
+                  <th>Acciones</th>
                 </tr>
               </thead>
 
               <tbody>
                 {medicos.map((m) => (
-                  <tr key={m.id}>
+                  <tr key={m.id} className="text-center">
                     <td>{m.nombre}</td>
                     <td>{m.apellido}</td>
                     <td>{m.matricula}</td>
                     <td>{m.especialidades}</td>
 
-                    <td className="text-center">
+                    <td>
                       <button
-                        className="btn btn-sm btn-danger"
+                        className="btn btn-danger btn-sm rounded-3"
                         onClick={() => deleteMedico(m.id)}
                       >
                         Eliminar
@@ -109,6 +98,7 @@ export default function MedicoTable({ reloadKey }) {
                   </tr>
                 ))}
               </tbody>
+
             </table>
           </div>
         )}
