@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 import mysql.connector
@@ -25,25 +24,10 @@ app = FastAPI(title="API TURNOS MEDICOS")
 app.add_middleware(                     # <--- usar add_middleware
     CORSMiddleware,
     allow_origins=["*"],
-=======
-# backend/app/main.py
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
-from app.core.config import settings
-from app.api import get_api_router   # <--- acá
-
-app = FastAPI(title=settings.APP_NAME)
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=[o.strip() for o in settings.FRONTEND_ORIGINS.split(",")],
-    allow_credentials=True,
->>>>>>> origin/vale
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-<<<<<<< HEAD
 # ---------RAIZ-------------
 @app.get("/", include_in_schema=False)
 def root():
@@ -231,11 +215,3 @@ def borrar_paciente(especialidad_id: int):
         raise HTTPException(status_code=409, detail=str(ve))
     except mysql.connector.Error:
         raise HTTPException(status_code=500, detail="Error al borrar especialidad")
-=======
-# Monta todos los routers en /api (o el prefijo que tengas)
-app.include_router(get_api_router(), prefix=settings.API_PREFIX)
-
-@app.get("/")
-def root():
-    return {"ok": True, "name": settings.APP_NAME}
->>>>>>> origin/vale

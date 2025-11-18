@@ -1,0 +1,5 @@
+[
+  { "id": 1, "nombre": "Julián", "apellido": "Suárez", "matricula": "M-1001", "especialidad_id": 1 },
+  { "id": 2, "nombre": "Lucía", "apellido": "Martín", "matricula": "M-1002", "especialidad_id": 2 },
+  { "id": 3, "nombre": "Carlos", "apellido": "Molina", "matricula": "M-1003", "especialidad_id": 3 }
+]
