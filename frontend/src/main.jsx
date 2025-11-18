@@ -8,6 +8,6 @@ import Medicos from "./componentes/medicos/medicosForm.jsx";
 
 createRoot(document.getElementById("root")).render(
   <StrictMode>
-    <Medicos />
+    <Especialidades />
   </StrictMode>
 );
