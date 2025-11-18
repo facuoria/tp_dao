@@ -180,4 +180,3 @@ def eliminar_especialidad_por_id(especialidad_id: int) -> int:
             cur.close()
         if conn:
             conn.close()
-        
