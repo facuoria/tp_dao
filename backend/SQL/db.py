@@ -180,4 +180,83 @@ def eliminar_especialidad_por_id(especialidad_id: int) -> int:
             cur.close()
         if conn:
             conn.close()
-        
+
+#-------------------- TURNOS -----------------------
+
+def insertar_turno(paciente_id, medico_id, fecha_hora, duracion_min,
+                   estado_turno_id, motivo, observaciones):
+    conn = None
+    cur = None
+    try:
+        conn = get_connection()
+        # no hace falta dictionary=True acá
+        cur = conn.cursor()
+
+        # 1) Verificar si el médico ya tiene turno en ese horario
+        sql_medico = """
+            SELECT id FROM turnos
+            WHERE medicos_id = %s
+              AND fecha_hora = %s
+        """
+        cur.execute(sql_medico, (medico_id, fecha_hora))
+        if cur.fetchone():
+            raise ValueError("El médico ya tiene un turno asignado en ese horario.")
+
+        # 2) Verificar si el paciente ya tiene turno en ese horario
+        sql_paciente = """
+            SELECT id FROM turnos
+            WHERE pacientes_id = %s
+              AND fecha_hora = %s
+        """
+        cur.execute(sql_paciente, (paciente_id, fecha_hora))
+        if cur.fetchone():
+            raise ValueError("El paciente ya tiene un turno asignado en ese horario.")
+
+        # 3) Insertar el turno
+        sql_insert = """
+            INSERT INTO turnos 
+                (pacientes_id, medicos_id, fecha_hora, duracion_min, 
+                 estado_turno_id, motivo, observaciones)
+            VALUES 
+                (%s, %s, %s, %s, %s, %s, %s)
+        """
+        params = (
+            paciente_id,
+            medico_id,
+            fecha_hora,
+            duracion_min,
+            estado_turno_id,
+            motivo,
+            observaciones
+        )
+
+        cur.execute(sql_insert, params)
+        conn.commit()
+        return cur.lastrowid
+
+    finally:
+        if cur:
+            cur.close()
+        if conn:
+            conn.close()
+
+def eliminar_turno_por_id(turno_id: int) -> int:
+    sql = """
+        DELETE FROM turnos
+        WHERE id = %s AND estado_turno_id = 3
+    """
+    conn = None
+    cur = None
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+        cur.execute(sql, (turno_id,))
+        afectados = cur.rowcount
+        conn.commit()
+        return afectados
+
+    finally:
+        if cur:
+            cur.close()
+        if conn:
+            conn.close()
