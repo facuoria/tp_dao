@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
 import TurnosTable from "./turnosTabla.jsx";
 
-export default function TurnoForm({ onCreated }) {
+export default function TurnoForm() {
+  // -------- FORM REGISTRO --------
+
   const EMPTY_FORM = {
     paciente_id: "",
     medico_id: "",
@@ -22,32 +24,33 @@ export default function TurnoForm({ onCreated }) {
   const [showForm, setShowForm] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
-  // ================================
-  // Cargar listas
-  // ================================
+  // -------- FORM EDICIÓN --------
+  const [editingTurno, setEditingTurno] = useState(null);
+  const [showEditForm, setShowEditForm] = useState(false);
+  const [editingClosing, setEditingClosing] = useState(false);
+  const [editEstado, setEditEstado] = useState("");
+  const [editHorario, setEditHorario] = useState("");
+  const [editHorariosDisponibles, setEditHorariosDisponibles] = useState([]);
+
+  // -------- FLAG REFRESH TABLA --------
+  const [refreshFlag, setRefreshFlag] = useState(0);
+
+  // -------- CARGAR LISTAS --------
+
   useEffect(() => {
-    fetch("http://localhost:8000/api/pacientes")
-      .then((r) => r.json())
-      .then(setPacientes);
-
-    fetch("http://localhost:8000/api/medicos")
-      .then((r) => r.json())
-      .then(setMedicos);
-
-    fetch("http://localhost:8000/api/estados")
-      .then((r) => r.json())
-      .then(setEstados);
+    fetch("http://localhost:8000/api/pacientes").then(r => r.json()).then(setPacientes);
+    fetch("http://localhost:8000/api/medicos").then(r => r.json()).then(setMedicos);
+    fetch("http://localhost:8000/api/estados").then(r => r.json()).then(setEstados);
   }, []);
 
-  // ================================
-  // Generador de horarios dinámicos
-  // ================================
+  // -------- GENERAR HORARIOS --------
+
   const generarHorarios = (duracion) => {
     const lista = [];
-    const start = 10 * 60; 
+    const start = 10 * 60;
     const end = 20 * 60;
 
-    duracion = parseInt(duracion);
+    duracion = Number(duracion);
     if (!duracion || duracion <= 0) return [];
 
     for (let min = start; min <= end; min += duracion) {
@@ -65,9 +68,8 @@ export default function TurnoForm({ onCreated }) {
     }
   }, [form.fecha, form.duracion_min]);
 
-  // ================================
-  // Formato de fecha humano
-  // ================================
+  // -------- FORMATEAR FECHA --------
+
   const formatoFechaHumano = (iso) => {
     if (!iso) return "";
     return new Date(iso).toLocaleDateString("es-AR", {
@@ -78,16 +80,14 @@ export default function TurnoForm({ onCreated }) {
     });
   };
 
-  // ================================
-  // Handlers
-  // ================================
+  // -------- HANDLERS REGISTRO --------
+
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  // ================================
-  // Enviar formulario
-  // ================================
+  // -------- SUBMIT REGISTRO --------
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSubmitting(true);
@@ -125,8 +125,9 @@ export default function TurnoForm({ onCreated }) {
 
       setAlert({ ok: true, text: "Turno registrado con éxito" });
       setForm(EMPTY_FORM);
-      if (onCreated) onCreated();
 
+      // 🔄 actualizar tabla
+      setRefreshFlag(prev => prev + 1);
     } catch (err) {
       setAlert({ ok: false, text: err.message });
     }
@@ -134,21 +135,90 @@ export default function TurnoForm({ onCreated }) {
     setSubmitting(false);
   };
 
+  // -------- ABRIR EDICIÓN --------
+
+  const handleEdit = (turno) => {
+    setShowForm(false); // cerrar formulario de registro
+
+    setEditingTurno(turno);
+    setEditEstado("");
+    setEditHorario("");
+
+    setEditHorariosDisponibles(generarHorarios(turno.duracion));
+
+    setShowEditForm(true);
+  };
+
+  // -------- CANCELAR ANIMADO --------
+
+  const cancelarEdicion = () => {
+    setEditingClosing(true);
+
+    setTimeout(() => {
+      setEditingClosing(false);
+      setShowEditForm(false);
+      setEditingTurno(null);
+      setEditEstado("");
+      setEditHorario("");
+    }, 450);
+  };
+
+  // -------- SUBMIT EDICIÓN --------
+
+  const submitEdicion = async () => {
+    if (!editEstado) {
+      alert("Selecciona un estado");
+      return;
+    }
+
+    const payload = {
+      estado_turno_id: Number(editEstado),
+    };
+
+    // REPROGRAMADO (id = 5)
+    if (Number(editEstado) === 5) {
+      if (!editHorario) {
+        alert("Selecciona un horario nuevo");
+        return;
+      }
+      const fechaOrg = editingTurno.inicio.split("T")[0];
+      payload.fecha_hora = `${fechaOrg}T${editHorario}`;
+    }
+
+    await fetch(`http://localhost:8000/api/turnos/${editingTurno.id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+
+    // 🔄 refrescar tabla
+    setRefreshFlag(prev => prev + 1);
+
+    cancelarEdicion();
+  };
+
+  // -------- RENDER --------
+
   return (
     <div className="d-flex justify-content-center align-items-start gap-5 mt-4">
 
-      {/* BOTÓN */}
+      {/* -------- FORM REGISTRO -------- */}
       <div className="text-center">
-        <button
-          className="btn btn-primary btn-lg px-4"
-          onClick={() => setShowForm(!showForm)}
-        >
-          {showForm ? "Cerrar formulario" : "Registrar Turno"}
-        </button>
 
-        {/* FORMULARIO ANIMADO */}
+        {/* ocultar el botón si estamos editando */}
+        {!showEditForm && (
+          <button
+            className="btn btn-primary btn-lg px-4"
+            onClick={() => {
+              setShowForm(!showForm);
+              setShowEditForm(false); // cerrar edicion si está abierta
+            }}
+          >
+            {showForm ? "Cerrar formulario" : "Registrar Turno"}
+          </button>
+        )}
+
         <div className={`slide-left mt-4 ${showForm ? "show" : ""}`}>
-
           <div className="card shadow border-0 rounded-4" style={{ width: "420px" }}>
             <div className="card-header text-center bg-white border-0">
               <h2 className="h5 fw-bold">Registrar Turno</h2>
@@ -250,7 +320,7 @@ export default function TurnoForm({ onCreated }) {
                   <label>Horario disponible</label>
                 </div>
 
-                {/* ESTADO DEL TURNO */}
+                {/* ESTADO */}
                 <div className="form-floating">
                   <select
                     className="form-select"
@@ -259,10 +329,8 @@ export default function TurnoForm({ onCreated }) {
                     onChange={handleChange}
                   >
                     <option value="">Seleccionar...</option>
-                    {estados.map((e, idx) => (
-                      <option key={idx} value={idx + 1}>
-                        {e.nombre}
-                      </option>
+                    {estados.map(e => (
+                      <option key={e.id} value={e.id}>{e.nombre}</option>
                     ))}
                   </select>
                   <label>Estado del turno</label>
@@ -288,8 +356,7 @@ export default function TurnoForm({ onCreated }) {
                     style={{ height: "80px" }}
                     value={form.observaciones}
                     onChange={handleChange}
-                    placeholder="Observaciones"
-                  />
+                  ></textarea>
                   <label>Observaciones</label>
                 </div>
 
@@ -303,7 +370,70 @@ export default function TurnoForm({ onCreated }) {
         </div>
       </div>
 
-      <TurnosTable />
+      {/* -------- FORM EDICIÓN -------- */}
+      <div className={`slide-left mt-4 ${showEditForm ? "show" : ""} ${editingClosing ? "closing" : ""}`}>
+        {showEditForm && (
+          <div className="card shadow border-0 rounded-4" style={{ width: "420px" }}>
+            <div className="card-header text-center bg-white border-0">
+              <h2 className="h5 fw-bold">Editar Turno</h2>
+              {editingTurno && (
+                <p className="text-muted small mb-0">
+                  Turno #{editingTurno.id} – {editingTurno.paciente_nombre} {editingTurno.paciente_apellido}
+                </p>
+              )}
+            </div>
+
+            <div className="card-body d-flex flex-column gap-3">
+
+              {/* ESTADO */}
+              <div className="form-floating">
+                <select
+                  className="form-select"
+                  value={editEstado}
+                  onChange={(e) => setEditEstado(e.target.value)}
+                >
+                  <option value="">Seleccionar...</option>
+                  {estados.map(e => (
+                    <option key={e.id} value={e.id}>{e.nombre}</option>
+                  ))}
+                </select>
+                <label>Nuevo Estado</label>
+              </div>
+
+              {/* REPROGRAMADO (id 5) */}
+              {Number(editEstado) === 5 && (
+                <div className="form-floating">
+                  <select
+                    className="form-select"
+                    value={editHorario}
+                    onChange={(e) => setEditHorario(e.target.value)}
+                  >
+                    <option value="">Seleccionar...</option>
+                    {editHorariosDisponibles.map(h => (
+                      <option key={h} value={h}>{h}</option>
+                    ))}
+                  </select>
+                  <label>Nuevo horario</label>
+                </div>
+              )}
+
+              <div className="d-flex gap-2 mt-2">
+                <button className="btn btn-secondary w-50" onClick={cancelarEdicion}>
+                  Cancelar
+                </button>
+                <button className="btn btn-primary w-50" onClick={submitEdicion}>
+                  Guardar
+                </button>
+              </div>
+
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* -------- TABLA -------- */}
+      <TurnosTable onEdit={handleEdit} refresh={refreshFlag} />
+
     </div>
   );
 }

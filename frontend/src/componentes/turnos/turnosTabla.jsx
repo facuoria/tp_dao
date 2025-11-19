@@ -1,158 +1,97 @@
 import { useEffect, useState } from "react";
-import { API_BASE } from "../../api.js";
 
-export default function TurnosTable({ reloadKey }) {
+export default function TurnosTable({ onEdit, refresh }) {
   const [turnos, setTurnos] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-
-  const loadTurnos = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const res = await fetch(`${API_BASE}/api/turnos`);
-      if (!res.ok) throw new Error("No se pudieron cargar los turnos");
-      const data = await res.json();
-      setTurnos(data || []);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Error al cargar turnos");
-    } finally {
-      setLoading(false);
-    }
-  };
+  const [estados, setEstados] = useState([]);
 
   useEffect(() => {
-    loadTurnos();
-  }, [reloadKey]);
+    cargarTurnos();
+    cargarEstados();
+  }, [refresh]);
 
-  const deleteTurno = async (id, estado) => {
-    // opcional: chequeo front-end (el back igual valida)
-    const esCancelado = /cancelado/i.test(estado || "");
-    if (!esCancelado) {
-      alert("Solo se pueden eliminar turnos en estado cancelado.");
-      return;
-    }
+  const cargarTurnos = async () => {
+    const r = await fetch("http://localhost:8000/api/turnos");
+    const data = await r.json();
+    setTurnos(data);
+  };
 
-    if (!window.confirm("¿Seguro que querés eliminar este turno?")) return;
+  const cargarEstados = async () => {
+    const r = await fetch("http://localhost:8000/api/estados");
+    const data = await r.json();
+    setEstados(data);
+  };
 
-    try {
-      const res = await fetch(`${API_BASE}/api/turnos/${id}`, {
-        method: "DELETE",
-      });
+  const borrarTurno = async (id) => {
+    const seguro = window.confirm("¿Seguro que deseas eliminar este turno?");
+    if (!seguro) return;
 
-      if (res.status === 204) {
-        setTurnos((prev) => prev.filter((t) => t.id !== id));
-      } else {
-        const data = await res.json().catch(() => ({}));
-        alert(data.detail || "No se pudo eliminar el turno.");
-      }
-    } catch {
-      alert("Error de conexión al intentar borrar el turno.");
-    }
+    await fetch(`http://localhost:8000/api/turnos/${id}`, { method: "DELETE" });
+    cargarTurnos();
   };
 
   return (
-    <div className="card shadow-sm border-0">
-      <div className="card-header bg-white border-0 pt-3 pb-2 d-flex justify-content-between align-items-center">
-        <div>
-          <h2 className="h5 mb-1">Turnos registrados</h2>
-          <p className="text-muted small mb-0">
-            Listado de turnos con paciente, médico y estado.
-          </p>
-        </div>
-        <button
-          className="btn btn-outline-secondary btn-sm"
-          onClick={loadTurnos}
-        >
-          Recargar
-        </button>
-      </div>
+    <div className="table-responsive mt-4">
+      <table className="table table-striped table-hover shadow-sm">
+        <thead className="table-primary">
+          <tr>
+            <th>Paciente</th>
+            <th>Médico</th>
+            <th>Inicio</th>
+            <th>Duración</th>
+            <th>Estado</th>
+            <th>Motivo</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
 
-      <div className="card-body p-0">
-        {loading && (
-          <p className="text-center text-muted py-3 mb-0">
-            Cargando turnos…
-          </p>
-        )}
+        <tbody>
+          {turnos.map((t) => {
+            const estaCancelado = t.estado === "Cancelado";
 
-        {error && !loading && (
-          <p className="text-center text-danger py-3 mb-0">
-            {error}
-          </p>
-        )}
+            return (
+              <tr key={t.id}>
+                <td>{t.paciente_nombre} {t.paciente_apellido}</td>
+                <td>
+                  {t.medico_nombre} {t.medico_apellido} (M {t.medico_matricula})
+                </td>
+                <td>{t.inicio.replace("T", " ")}</td>
+                <td>{t.duracion} min</td>
+                <td>{t.estado}</td>
+                <td>{t.motivo}</td>
 
-        {!loading && !error && turnos.length === 0 && (
-          <p className="text-center text-muted py-3 mb-0">
-            No hay turnos registrados.
-          </p>
-        )}
+                <td>
+                  {/* EDITAR */}
+                  <button
+                    className="btn btn-warning btn-sm me-2"
+                    onClick={() => onEdit(t)}
+                  >
+                    Editar
+                  </button>
 
-        {!loading && !error && turnos.length > 0 && (
-          <div className="table-responsive">
-            <table className="table table-striped table-hover mb-0 align-middle">
-              <thead className="table-light">
-                <tr>
-                  <th>Paciente</th>
-                  <th>Médico</th>
-                  <th>Inicio</th>
-                  <th>Duración</th>
-                  <th>Motivo</th>
-                  <th>Observaciones</th>
-                  <th>Estado</th>
-                  <th className="text-center">Acciones</th>
-                </tr>
-              </thead>
-              <tbody>
-                {turnos.map((t) => {
-                  const esCancelado = /cancelado/i.test(t.estado || "");
-                  return (
-                    <tr key={t.id}>
-                      <td>
-                        {t.paciente_apellido}, {t.paciente_nombre}
-                        <br />
-                        <small className="text-muted">
-                          DNI {t.paciente_dni}
-                        </small>
-                      </td>
-                      <td>
-                        {t.medico_apellido}, {t.medico_nombre}
-                        <br />
-                        <small className="text-muted">
-                          Mat. {t.medico_matricula}
-                        </small>
-                      </td>
-                      <td>{t.inicio}</td>
-                      <td>{t.duracion} min</td>
-                      <td>{t.motivo || "-"}</td>
-                      <td>
-                        <span style={{ whiteSpace: "pre-wrap" }}>
-                          {t.observaciones || "-"}
-                        </span>
-                      </td>
-                      <td>{t.estado}</td>
-                      <td className="text-center">
-                        <button
-                          className="btn btn-sm btn-danger"
-                          disabled={!esCancelado}
-                          title={
-                            esCancelado
-                              ? "Eliminar turno cancelado"
-                              : "Solo se pueden eliminar turnos cancelados"
-                          }
-                          onClick={() => deleteTurno(t.id, t.estado)}
-                        >
-                          Eliminar
-                        </button>
-                      </td>
-                      
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
+                  {/* BORRAR → solo habilitado si está Cancelado */}
+                  <button
+                    className={`btn btn-sm ${
+                      estaCancelado ? "btn-danger" : "btn-outline-danger"
+                    }`}
+                    disabled={!estaCancelado}
+                    onClick={() => {
+                      if (estaCancelado) borrarTurno(t.id);
+                    }}
+                    title={
+                      estaCancelado
+                        ? "Eliminar turno cancelado"
+                        : "Solo se pueden borrar turnos en estado Cancelado"
+                    }
+                  >
+                    Borrar
+                  </button>
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+
+      </table>
     </div>
   );
 }

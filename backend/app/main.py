@@ -353,3 +353,46 @@ def borrar_turno(turno_id: int):
         )
 
     return
+
+#---------------- MODIFICAR TURNO -----------------
+@app.put("/api/turnos/{turno_id}")
+def actualizar_turno(turno_id: int, body: dict):
+
+    nuevo_estado = body.get("estado_turno_id")
+    nueva_fecha = body.get("fecha_hora", None)
+
+    if not nuevo_estado:
+        raise HTTPException(status_code=400, detail="El estado es obligatorio.")
+
+    # Si cambia a reprogramado (4), debe venir fecha_hora
+    if nuevo_estado == 4 and not nueva_fecha:
+        raise HTTPException(status_code=400, detail="La nueva fecha es obligatoria para reprogramar.")
+
+    # Parsear fecha si viene
+    if nueva_fecha:
+        try:
+            if "T" in nueva_fecha:
+                nueva_fecha = datetime.fromisoformat(nueva_fecha)
+            else:
+                nueva_fecha = datetime.strptime(nueva_fecha, "%Y-%m-%d %H:%M")
+            nueva_fecha = nueva_fecha.strftime("%Y-%m-%d %H:%M:%S")
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Formato de fecha/hora inválido.")
+
+    # Actualizar turno
+    conn = get_connection()
+    cur = conn.cursor()
+
+    sql = "UPDATE turnos SET estado_turno_id = %s{} WHERE id = %s"
+
+    if nueva_fecha:
+        sql = sql.format(", fecha_hora = %s")
+        params = (nuevo_estado, nueva_fecha, turno_id)
+    else:
+        sql = sql.format("")
+        params = (nuevo_estado, turno_id)
+
+    cur.execute(sql, params)
+    conn.commit()
+
+    return {"detail": "Turno actualizado correctamente"}
