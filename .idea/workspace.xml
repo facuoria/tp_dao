@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="fed70837-2b1b-4935-81c9-9646b82410c1" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/backend/SQL/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/SQL/db.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/SQL/turnosMedicos.sql" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/backend/app/db.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/.gitignore" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/eslint.config.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/index.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/public/vite.svg" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/src/App.css" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/src/App.jsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/src/api.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/src/assets/react.svg" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/src/componentes/especialidades/especialidadesForms.jsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/src/componentes/especialidades/especialidadesTabla.jsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/src/componentes/pacientes/pacientesForms.jsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/src/componentes/pacientes/pacientesTabla.jsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/src/index.css" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/src/main.jsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/vite.config.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/app/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/app/main.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/README.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/app/_providers/msw-client.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/app/especialidades/page.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/app/favicon.ico" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/app/globals.css" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/app/layout.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/app/medicos/[id]/page.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/app/medicos/nuevo/page.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/app/medicos/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/app/medicos/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/app/pacientes/[id]/page.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/app/pacientes/nuevo/page.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/app/pacientes/page.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/app/page.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/app/recetas/nuevo/page.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/app/recetas/page.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/app/tailwind.config.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/app/turnos/[id]/page.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/app/turnos/nuevo/page.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/app/turnos/page.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/components/DateTimePicker.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/components/FormField.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/components/Navbar.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/eslint.config.mjs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/lib/api/client.ts" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/lib/api/client.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/lib/api/dto.ts" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/lib/api/dto.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/lib/api/endpoints.ts" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/lib/api/endpoints.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/lib/utils/constants.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/lib/utils/dates.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/lib/validation/medico.schema.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/lib/validation/paciente.schema.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/lib/validation/receta.schema.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/lib/validation/turno.schema.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/mocks/browser.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/mocks/handlers.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/mocks/seed/agenda_medico.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/mocks/seed/especialidades.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/mocks/seed/medicos.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/mocks/seed/pacientes.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/mocks/seed/recetas.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/mocks/seed/turnos.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/next-env.d.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/next.config.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/package-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/package-lock.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/package.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/postcss.config.mjs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/public/file.svg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/public/globe.svg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/public/mockServiceWorker.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/public/next.svg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/public/vercel.svg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/public/window.svg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/tsconfig.json" beforeDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="GitHubPullRequestSearchHistory">{
+  &quot;lastFilter&quot;: {
+    &quot;state&quot;: &quot;OPEN&quot;,
+    &quot;assignee&quot;: &quot;valereineri&quot;
+  }
+}</component>
+  <component name="GithubPullRequestsUISettings">{
+  &quot;selectedUrlAndAccountId&quot;: {
+    &quot;url&quot;: &quot;https://github.com/facuoria/tp_dao.git&quot;,
+    &quot;accountId&quot;: &quot;fb4e3fbc-b99b-4c17-87f0-cd566dcb6a34&quot;
+  }
+}</component>
+  <component name="ProjectColorInfo">{
+  &quot;associatedIndex&quot;: 7
+}</component>
+  <component name="ProjectId" id="35ZaOcz7zTrynaSXqCm9kkn8YLQ" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;Merging vale&quot;,
+    &quot;ignore.virus.scanning.warn.message&quot;: &quot;true&quot;,
+    &quot;junie.onboarding.icon.badge.shown&quot;: &quot;true&quot;,
+    &quot;last_opened_file_path&quot;: &quot;C:/Users/valen/Desktop/tp dao/tp_dao&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;ts.external.directory.path&quot;: &quot;C:\\Program Files\\JetBrains\\IntelliJ IDEA 2024.3.5\\plugins\\javascript-plugin\\jsLanguageServicesImpl\\external&quot;,
+    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
+  }
+}</component>
+  <component name="SharedIndexes">
+    <attachedChunks>
+      <set>
+        <option value="bundled-jdk-9823dce3aa75-fbdcb00ec9e3-intellij.indexing.shared.core-IU-251.25410.129" />
+        <option value="bundled-js-predefined-d6986cc7102b-6a121458b545-JavaScript-IU-251.25410.129" />
+      </set>
+    </attachedChunks>
+  </component>
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="fed70837-2b1b-4935-81c9-9646b82410c1" name="Changes" comment="" />
+      <created>1763320017096</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1763320017096</updated>
+      <workItem from="1763320018908" duration="1104000" />
+      <workItem from="1763321182643" duration="329000" />
+      <workItem from="1763321527099" duration="354000" />
+      <workItem from="1763321899106" duration="6497000" />
+      <workItem from="1763410523828" duration="903000" />
+      <workItem from="1763411560690" duration="54000" />
+    </task>
+    <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
+  </component>
+</project>

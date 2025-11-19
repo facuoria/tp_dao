@@ -1,14 +1,25 @@
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import Navbar from "./componentes/navbar/Navbar"; // si esto existe
+import Home from "./Pages/Home";
+import PacientesPage from "./Pages/PacientesPage";
+import MedicosPage from "./Pages/MedicosPage";
+import EspecialidadesPage from "./Pages/EspecialidadesPage";
+import RecetasPage from "./Pages/RecetasPage";
 
 
-
-export default function App() {
+function App() {
   return (
-    <div className="bg-light min-vh-100">
-      <header className="bg-dark text-white py-3 mb-2">
-        <div className="container">
-          <h1 className="h4 mb-0">Gestor de turnos - Pacientes, Médicos y Especialidades</h1>
-        </div>
-      </header>
-    </div>
+    <Router>
+      <Navbar />
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/pacientes" element={<PacientesPage />} />
+        <Route path="/medicos" element={<MedicosPage />} />
+        <Route path="/especialidades" element={<EspecialidadesPage />} />
+        <Route path="/recetas" element={<RecetasPage />} />
+      </Routes>
+    </Router>
   );
 }
+
+export default App;

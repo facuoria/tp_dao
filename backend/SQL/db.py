@@ -10,7 +10,7 @@ CFG = {
     "host": os.getenv("MYSQL_HOST", "localhost"),
     "port": int(os.getenv("MYSQL_PORT", "3306")),
     "user": os.getenv("MYSQL_USER", "root"),
-    "password": os.getenv("MYSQL_PASSWORD", "rolpa"),
+    "password": os.getenv("MYSQL_PASSWORD", "jbj953Vale"),
     "database": os.getenv("MYSQL_DB", "turnosMedicos"),
     "autocommit": False,
     "charset": "utf8",
