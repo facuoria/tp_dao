@@ -27,7 +27,7 @@ def test_connection():
             cur.execute("SELECT DATABASE(), VERSION()")
             print("Conectado a:", cur.fetchone())
     except Error as e:
-        print("Error de conexión:", e)
+        print("Error de conexion:", e)
         raise
 
 #----------- PACIENTES ------------
@@ -53,7 +53,7 @@ def insertar_paciente(dni, nombre, apellido, mail, telefono, fecha_nacimiento):
         if conn:
             conn.rollback()
         if e.errno == errorcode.ER_DUP_ENTRY:
-            # 👇 mensaje claro para el front
+            # TODO: mensaje claro para el front
             raise ValueError(f"DNI ya existente: {dni}") from e
         raise
     finally:
@@ -175,6 +175,85 @@ def eliminar_especialidad_por_id(especialidad_id: int) -> int:
         return afectados
     
     # Puede ser necesario un except
+    finally:
+        if cur:
+            cur.close()
+        if conn:
+            conn.close()
+#-------------------- TURNOS -----------------------
+
+def insertar_turno(paciente_id, medico_id, fecha_hora, duracion_min,
+                   estado_turno_id, motivo, observaciones):
+    conn = None
+    cur = None
+    try:
+        conn = get_connection()
+        # no hace falta dictionary=True aqui
+        cur = conn.cursor()
+
+        # 1) Verificar si el medico ya tiene turno en ese horario
+        sql_medico = """
+            SELECT id FROM turnos
+            WHERE medicos_id = %s
+              AND fecha_hora = %s
+        """
+        cur.execute(sql_medico, (medico_id, fecha_hora))
+        if cur.fetchone():
+            raise ValueError("El medico ya tiene un turno asignado en ese horario.")
+
+        # 2) Verificar si el paciente ya tiene turno en ese horario
+        sql_paciente = """
+            SELECT id FROM turnos
+            WHERE pacientes_id = %s
+              AND fecha_hora = %s
+        """
+        cur.execute(sql_paciente, (paciente_id, fecha_hora))
+        if cur.fetchone():
+            raise ValueError("El paciente ya tiene un turno asignado en ese horario.")
+
+        # 3) Insertar el turno
+        sql_insert = """
+            INSERT INTO turnos 
+                (pacientes_id, medicos_id, fecha_hora, duracion_min, 
+                 estado_turno_id, motivo, observaciones)
+            VALUES 
+                (%s, %s, %s, %s, %s, %s, %s)
+        """
+        params = (
+            paciente_id,
+            medico_id,
+            fecha_hora,
+            duracion_min,
+            estado_turno_id,
+            motivo,
+            observaciones
+        )
+
+        cur.execute(sql_insert, params)
+        conn.commit()
+        return cur.lastrowid
+
+    finally:
+        if cur:
+            cur.close()
+        if conn:
+            conn.close()
+
+def eliminar_turno_por_id(turno_id: int) -> int:
+    sql = """
+        DELETE FROM turnos
+        WHERE id = %s AND estado_turno_id = 3
+    """
+    conn = None
+    cur = None
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+        cur.execute(sql, (turno_id,))
+        afectados = cur.rowcount
+        conn.commit()
+        return afectados
+
     finally:
         if cur:
             cur.close()
