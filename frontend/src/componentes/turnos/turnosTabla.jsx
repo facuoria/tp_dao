@@ -1,158 +1,132 @@
 import { useEffect, useState } from "react";
 import { API_BASE } from "../../api.js";
 
-export default function TurnosTable({ reloadKey }) {
+export default function TurnosTabla({ reloadKey, onEdit }) {
   const [turnos, setTurnos] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  const loadTurnos = async () => {
+  const loadTurnos = () => {
     setLoading(true);
     setError(null);
-    try {
-      const res = await fetch(`${API_BASE}/api/turnos`);
-      if (!res.ok) throw new Error("No se pudieron cargar los turnos");
-      const data = await res.json();
-      setTurnos(data || []);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Error al cargar turnos");
-    } finally {
-      setLoading(false);
-    }
+
+    fetch(`${API_BASE}/api/turnos`)
+      .then(res => res.json())
+      .then(setTurnos)
+      .catch(() => setError("Error al cargar turnos"))
+      .finally(() => setLoading(false));
   };
 
   useEffect(() => {
     loadTurnos();
   }, [reloadKey]);
 
-  const deleteTurno = async (id, estado) => {
-    // opcional: chequeo front-end (el back igual valida)
-    const esCancelado = /cancelado/i.test(estado || "");
-    if (!esCancelado) {
-      alert("Solo se pueden eliminar turnos en estado cancelado.");
+  const deleteTurno = (id, estado) => {
+    if (!/cancelado/i.test(estado)) {
+      alert("Solo se pueden eliminar turnos cancelados.");
       return;
     }
 
-    if (!window.confirm("¿Seguro que querés eliminar este turno?")) return;
+    if (!confirm("¿Seguro que querés eliminar este turno?")) return;
 
-    try {
-      const res = await fetch(`${API_BASE}/api/turnos/${id}`, {
-        method: "DELETE",
-      });
-
-      if (res.status === 204) {
-        setTurnos((prev) => prev.filter((t) => t.id !== id));
-      } else {
-        const data = await res.json().catch(() => ({}));
-        alert(data.detail || "No se pudo eliminar el turno.");
-      }
-    } catch {
-      alert("Error de conexión al intentar borrar el turno.");
-    }
+    fetch(`${API_BASE}/api/turnos/${id}`, { method: "DELETE" })
+      .then(res => {
+        if (res.status === 204) loadTurnos();
+      })
+      .catch(() => alert("Error al eliminar turno"));
   };
 
   return (
-    <div className="card shadow-sm border-0">
-      <div className="card-header bg-white border-0 pt-3 pb-2 d-flex justify-content-between align-items-center">
+    <div className="card shadow-lg border-0 rounded-4 mt-4 w-100" style={{ maxWidth: "900px" }}>
+      
+      <div className="card-header bg-white border-0 pt-4 pb-2 d-flex justify-content-between">
         <div>
-          <h2 className="h5 mb-1">Turnos registrados</h2>
-          <p className="text-muted small mb-0">
-            Listado de turnos con paciente, médico y estado.
-          </p>
+          <h2 className="h5 fw-bold mb-1">Turnos registrados</h2>
+          <p className="text-muted small">Listado de turnos cargados.</p>
         </div>
-        <button
-          className="btn btn-outline-secondary btn-sm"
-          onClick={loadTurnos}
-        >
+
+        <button className="btn btn-outline-primary btn-sm" onClick={loadTurnos}>
           Recargar
         </button>
       </div>
 
       <div className="card-body p-0">
         {loading && (
-          <p className="text-center text-muted py-3 mb-0">
-            Cargando turnos…
-          </p>
+          <p className="text-center text-muted py-4 mb-0">Cargando turnos...</p>
         )}
 
-        {error && !loading && (
-          <p className="text-center text-danger py-3 mb-0">
-            {error}
-          </p>
+        {error && (
+          <p className="text-center text-danger py-4 mb-0">{error}</p>
         )}
 
         {!loading && !error && turnos.length === 0 && (
-          <p className="text-center text-muted py-3 mb-0">
-            No hay turnos registrados.
-          </p>
+          <p className="text-center text-muted py-4 mb-0">No hay turnos cargados.</p>
         )}
 
         {!loading && !error && turnos.length > 0 && (
           <div className="table-responsive">
-            <table className="table table-striped table-hover mb-0 align-middle">
+            <table className="table table-hover table-striped align-middle mb-0">
+              
               <thead className="table-light">
-                <tr>
+                <tr className="text-center">
                   <th>Paciente</th>
                   <th>Médico</th>
                   <th>Inicio</th>
                   <th>Duración</th>
+                  <th>Estado</th>
                   <th>Motivo</th>
                   <th>Observaciones</th>
-                  <th>Estado</th>
-                  <th className="text-center">Acciones</th>
+                  <th style={{ width: "18%" }}>Acciones</th>
                 </tr>
               </thead>
+
               <tbody>
-                {turnos.map((t) => {
-                  const esCancelado = /cancelado/i.test(t.estado || "");
-                  return (
-                    <tr key={t.id}>
-                      <td>
-                        {t.paciente_apellido}, {t.paciente_nombre}
-                        <br />
-                        <small className="text-muted">
-                          DNI {t.paciente_dni}
-                        </small>
-                      </td>
-                      <td>
-                        {t.medico_apellido}, {t.medico_nombre}
-                        <br />
-                        <small className="text-muted">
-                          Mat. {t.medico_matricula}
-                        </small>
-                      </td>
-                      <td>{t.inicio}</td>
-                      <td>{t.duracion} min</td>
-                      <td>{t.motivo || "-"}</td>
-                      <td>
-                        <span style={{ whiteSpace: "pre-wrap" }}>
-                          {t.observaciones || "-"}
-                        </span>
-                      </td>
-                      <td>{t.estado}</td>
-                      <td className="text-center">
-                        <button
-                          className="btn btn-sm btn-danger"
-                          disabled={!esCancelado}
-                          title={
-                            esCancelado
-                              ? "Eliminar turno cancelado"
-                              : "Solo se pueden eliminar turnos cancelados"
-                          }
-                          onClick={() => deleteTurno(t.id, t.estado)}
-                        >
-                          Eliminar
-                        </button>
-                      </td>
-                      
-                    </tr>
-                  );
-                })}
+                {turnos.map(t => (
+                  <tr key={t.id} className="text-center">
+
+                    <td>{t.paciente_apellido}, {t.paciente_nombre}</td>
+
+                    <td>{t.medico_apellido}, {t.medico_nombre}</td>
+
+                    <td>{t.inicio}</td>
+
+                    <td>{t.duracion} min</td>
+
+                    <td>{t.estado}</td>
+
+                    <td>{t.motivo || "-"}</td>
+
+                    <td style={{ whiteSpace: "pre-wrap" }}>
+                      {t.observaciones || "-"}
+                    </td>
+
+                    <td className="d-flex justify-content-center gap-2">
+                      <button
+                        className="btn btn-outline-secondary btn-sm rounded-3"
+                        onClick={() => onEdit && onEdit(t)}
+                      >
+                        Editar
+                      </button>
+
+                      <button
+                        className="btn btn-danger btn-sm rounded-3"
+                        disabled={!/cancelado/i.test(t.estado)}
+                        onClick={() => deleteTurno(t.id, t.estado)}
+                      >
+                        Eliminar
+                      </button>
+                    </td>
+
+                  </tr>
+                ))}
               </tbody>
+
             </table>
           </div>
         )}
+
       </div>
+
     </div>
   );
 }

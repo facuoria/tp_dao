@@ -1,299 +1,345 @@
 import { useEffect, useState } from "react";
-import TurnosTable from "./turnosTabla.jsx";
+import { API_BASE } from "../../api.js";
 
-export default function TurnoForm({ onCreated }) {
+export default function TurnosForm({ onSuccess, editingTurno, onCancelEdit }) {
   const EMPTY_FORM = {
     paciente_id: "",
     medico_id: "",
     fecha: "",
-    duracion_min: "30",
     horario: "",
+    duracion_min: "30",
     estado_turno_id: "",
     motivo: "",
-    observaciones: "",
+    observaciones: ""
   };
 
+  const isEdit = Boolean(editingTurno?.id);
+
   const [form, setForm] = useState(EMPTY_FORM);
+  const [touched, setTouched] = useState({});
+  const [errors, setErrors] = useState({});
+  const [alert, setAlert] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [showForm, setShowForm] = useState(false);
+
   const [pacientes, setPacientes] = useState([]);
   const [medicos, setMedicos] = useState([]);
   const [estados, setEstados] = useState([]);
   const [horarios, setHorarios] = useState([]);
-  const [alert, setAlert] = useState(null);
-  const [showForm, setShowForm] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
-  const [reloadKey, setReloadKey] = useState(0);
 
-  // ================================
-  // Cargar listas
-  // ================================
+  // ---------------- VALIDACIONES ----------------
+  const validate = () => {
+    const e = {};
+    if (!form.paciente_id) e.paciente_id = "Elegí paciente";
+    if (!form.medico_id) e.medico_id = "Elegí médico";
+    if (!form.fecha) e.fecha = "La fecha es obligatoria";
+    if (!form.horario) e.horario = "Elegí horario";
+    if (!form.estado_turno_id) e.estado_turno_id = "Elegí estado";
+    return e;
+  };
+
   useEffect(() => {
-    fetch("http://localhost:8000/api/pacientes")
-      .then((r) => r.json())
-      .then(setPacientes);
+    setErrors(validate());
+  }, [form]);
 
-    fetch("http://localhost:8000/api/medicos")
-      .then((r) => r.json())
-      .then(setMedicos);
-
-    fetch("http://localhost:8000/api/estados")
-      .then((r) => r.json())
-      .then(setEstados);
+  // ---------------- CARGO LISTAS ----------------
+  useEffect(() => {
+    fetch(`${API_BASE}/api/pacientes`).then(r => r.json()).then(setPacientes);
+    fetch(`${API_BASE}/api/medicos`).then(r => r.json()).then(setMedicos);
+    fetch(`${API_BASE}/api/estados`).then(r => r.json()).then(setEstados);
   }, []);
 
-  // ================================
-  // Generador de horarios dinámicos
-  // ================================
+  // ---------------- HORARIOS ----------------
   const generarHorarios = (duracion) => {
-    const lista = [];
-    const start = 10 * 60; 
-    const end = 20 * 60;
+    const arr = [];
+    const inicio = 10 * 60;
+    const fin = 20 * 60;
+    duracion = Number(duracion);
 
-    duracion = parseInt(duracion);
-    if (!duracion || duracion <= 0) return [];
-
-    for (let min = start; min <= end; min += duracion) {
-      const h = String(Math.floor(min / 60)).padStart(2, "0");
-      const m = String(min % 60).padStart(2, "0");
-      lista.push(`${h}:${m}`);
+    for (let m = inicio; m <= fin; m += duracion) {
+      const h = String(Math.floor(m / 60)).padStart(2, "0");
+      const min = String(m % 60).padStart(2, "0");
+      arr.push(`${h}:${min}`);
     }
-    return lista;
+    return arr;
   };
 
   useEffect(() => {
     if (form.fecha && form.duracion_min) {
       setHorarios(generarHorarios(form.duracion_min));
-      setForm({ ...form, horario: "" });
     }
   }, [form.fecha, form.duracion_min]);
 
-  // ================================
-  // Formato de fecha humano
-  // ================================
-  const formatoFechaHumano = (iso) => {
-    if (!iso) return "";
-    return new Date(iso).toLocaleDateString("es-AR", {
-      weekday: "short",
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-    });
+  // ---------------- EDICIÓN ----------------
+  useEffect(() => {
+    if (editingTurno) {
+      setForm({
+        paciente_id: editingTurno.paciente_id,
+        medico_id: editingTurno.medico_id,
+        fecha: editingTurno.inicio.split("T")[0],
+        horario: editingTurno.inicio.split("T")[1].slice(0,5),
+        duracion_min: editingTurno.duracion,
+        estado_turno_id: editingTurno.estado_id,
+        motivo: editingTurno.motivo,
+        observaciones: editingTurno.observaciones
+      });
+      setShowForm(true);
+      setTouched({});
+      setErrors({});
+    } else {
+      setForm(EMPTY_FORM);
+    }
+  }, [editingTurno]);
+
+  const markTouched = (f) => {
+    setTouched(prev => ({ ...prev, [f]: true }));
   };
+
+  const isValid = Object.keys(errors).length === 0;
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
-    setForm((prev) => ({ ...prev, [name]: value }));
+    setForm({ ...form, [e.target.name]: e.target.value });
     setAlert(null);
   };
 
+  // ---------------- SUBMIT ----------------
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!isValid) return;
+
     setSubmitting(true);
-    setAlert(null);
+
+    const payload = {
+      paciente_id: Number(form.paciente_id),
+      medico_id: Number(form.medico_id),
+      fecha_hora: `${form.fecha}T${form.horario}`,
+      duracion_min: Number(form.duracion_min),
+      estado_turno_id: Number(form.estado_turno_id),
+      motivo: form.motivo,
+      observaciones: form.observaciones
+    };
+
+    const endpoint = isEdit
+      ? `${API_BASE}/api/turnos/${editingTurno.id}`
+      : `${API_BASE}/api/turnos`;
+
+    const method = isEdit ? "PUT" : "POST";
 
     try {
-      const body = {
-        paciente_id: form.paciente_id,
-        medico_id: form.medico_id,
-        fecha_hora: form.fecha ? `${form.fecha} ${form.horario || "00:00"}` : "",
-        duracion_min: form.duracion_min,
-        estado_turno_id: form.estado_turno_id,
-        motivo: form.motivo,
-        observaciones: form.observaciones,
-      };
-
-      const res = await fetch("http://localhost:8000/api/turnos", {
-        method: "POST",
+      const res = await fetch(endpoint, {
+        method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
+        body: JSON.stringify(payload)
       });
 
-      if (res.status === 201) {
-        setAlert({ ok: true, text: "Turno guardado correctamente." });
+      if (res.ok) {
+        setAlert({ ok: true, text: isEdit ? "Turno actualizado" : "Turno registrado" });
+        if (onSuccess) onSuccess();
+        if (onCancelEdit) onCancelEdit();
         setForm(EMPTY_FORM);
-        setReloadKey((k) => k + 1);
-        if (onCreated) onCreated();
       } else {
-        const data = await res.json().catch(() => ({}));
-        setAlert({ ok: false, text: data.detail || "No se pudo guardar el turno." });
+        const data = await res.json();
+        setAlert({ ok: false, text: data.detail || "Error inesperado" });
       }
-    } catch (err) {
-      setAlert({ ok: false, text: err.message || "Error al guardar turno." });
-    } finally {
-      setSubmitting(false);
+
+    } catch {
+      setAlert({ ok: false, text: "Error de conexión" });
     }
+
+    setSubmitting(false);
   };
 
+  // ---------------- RENDER ----------------
   return (
-    <div className="container py-4">
-      <div className="d-flex flex-wrap justify-content-center align-items-start gap-4">
+    <div className="d-flex flex-column align-items-center w-100" style={{ maxWidth: "520px" }}>
+      {/* BOTÓN */}
+      <div className="text-center w-100">
+        <button
+          className="btn btn-primary btn-lg px-4"
+          onClick={() => setShowForm(!showForm)}
+        >
+          {showForm ? "Cerrar formulario" : isEdit ? "Editar Turno" : "Registrar Turno"}
+        </button>
 
-        {/* Botón + Formulario */}
-        <div className="d-flex flex-column align-items-center" style={{ width: "460px", maxWidth: "100%" }}>
-          <div className="text-center w-100">
-            <button
-              className="btn btn-primary btn-lg px-4"
-              onClick={() => setShowForm(!showForm)}
-            >
-              {showForm ? "Cerrar formulario" : "Registrar Turno"}
-            </button>
+        {isEdit && (
+          <div className="text-muted small mt-1">
+            Editando Turno #{editingTurno?.id}
           </div>
+        )}
+      </div>
 
-          <div className={`slide-left mt-4 w-100 ${showForm ? "show" : ""}`}>
+      {/* FORM */}
+      <div className={`slide-left w-100 ${showForm ? "show" : ""}`}>
+        <div className="card shadow border-0 rounded-4 p-4">
 
-            <div className="card shadow border-0 rounded-4">
-              <div className="card-header text-center bg-white border-0">
-                <h2 className="h5 fw-bold">Registrar Turno</h2>
-                <p className="text-muted small">Complete los datos del turno.</p>
-              </div>
-
-              <div className="card-body">
-
-                {alert && (
-                  <div className={`alert ${alert.ok ? "alert-success" : "alert-danger"}`}>
-                    {alert.text}
-                  </div>
-                )}
-
-                <form onSubmit={handleSubmit} className="d-flex flex-column gap-3">
-
-                  <div className="d-flex gap-2 align-items-center text-muted small">
-                    <span>Fecha seleccionada:</span>
-                    <strong>{form.fecha ? formatoFechaHumano(form.fecha) : "-----"}</strong>
-                  </div>
-
-                  {/* PACIENTE */}
-                  <div className="form-floating">
-                    <select
-                      className="form-select"
-                      name="paciente_id"
-                      value={form.paciente_id}
-                      onChange={handleChange}
-                    >
-                      <option value="">Seleccionar...</option>
-                      {pacientes.map(p => (
-                        <option key={p.id} value={p.id}>
-                          {p.dni} - {p.nombre} {p.apellido}
-                        </option>
-                      ))}
-                    </select>
-                    <label>Paciente</label>
-                  </div>
-
-                  {/* MÉDICO */}
-                  <div className="form-floating">
-                    <select
-                      className="form-select"
-                      name="medico_id"
-                      value={form.medico_id}
-                      onChange={handleChange}
-                    >
-                      <option value="">Seleccionar...</option>
-                      {medicos.map(m => (
-                        <option key={m.id} value={m.id}>
-                          {m.nombre} {m.apellido} - Mat: {m.matricula}
-                        </option>
-                      ))}
-                    </select>
-                    <label>Médico</label>
-                  </div>
-
-                  {/* FECHA */}
-                  <div className="form-floating">
-                    <input
-                      type="date"
-                      name="fecha"
-                      className="form-control"
-                      value={form.fecha}
-                      onChange={handleChange}
-                    />
-                    <label>Fecha</label>
-                  </div>
-
-                  {/* DURACIÓN */}
-                  <div className="form-floating">
-                    <input
-                      type="number"
-                      name="duracion_min"
-                      className="form-control"
-                      value={form.duracion_min}
-                      min={5}
-                      onChange={handleChange}
-                    />
-                    <label>Duración (min)</label>
-                  </div>
-
-                  {/* HORARIOS DISPONIBLES */}
-                  <div className="form-floating">
-                    <select
-                      className="form-select"
-                      name="horario"
-                      value={form.horario}
-                      onChange={handleChange}
-                    >
-                      <option value="">Seleccionar horario...</option>
-                      {horarios.map((h) => (
-                        <option key={h} value={h}>{h}</option>
-                      ))}
-                    </select>
-                    <label>Horario disponible</label>
-                  </div>
-
-                  {/* ESTADO DEL TURNO */}
-                  <div className="form-floating">
-                    <select
-                      className="form-select"
-                      name="estado_turno_id"
-                      value={form.estado_turno_id}
-                      onChange={handleChange}
-                    >
-                      <option value="">Seleccionar...</option>
-                      {estados.map((e, idx) => (
-                        <option key={idx} value={idx + 1}>
-                          {e.nombre}
-                        </option>
-                      ))}
-                    </select>
-                    <label>Estado del turno</label>
-                  </div>
-
-                  {/* MOTIVO */}
-                  <div className="form-floating">
-                    <input
-                      className="form-control"
-                      name="motivo"
-                      value={form.motivo}
-                      onChange={handleChange}
-                      placeholder="Motivo"
-                    />
-                    <label>Motivo</label>
-                  </div>
-
-                  {/* OBSERVACIONES */}
-                  <div className="form-floating">
-                    <textarea
-                      className="form-control"
-                      name="observaciones"
-                      style={{ height: "80px" }}
-                      value={form.observaciones}
-                      onChange={handleChange}
-                      placeholder="Observaciones"
-                    />
-                    <label>Observaciones</label>
-                  </div>
-
-                  <button className="btn btn-primary w-100" disabled={submitting}>
-                    {submitting ? "Guardando..." : "Guardar Turno"}
-                  </button>
-
-                </form>
-              </div>
+          {alert && (
+            <div className={`alert ${alert.ok ? "alert-success" : "alert-danger"}`}>
+              {alert.text}
             </div>
-          </div>
-        </div>
+          )}
 
-        {/* Tabla a la derecha */}
-        <div className="flex-grow-1" style={{ minWidth: "380px", maxWidth: "900px" }}>
-          <TurnosTable reloadKey={reloadKey} />
+          <form onSubmit={handleSubmit}>
+            <div className="row g-3">
+
+              {/* PACIENTE */}
+              <div className="col-md-6">
+                <div className="form-floating">
+                  <select
+                    className={`form-select ${
+                      touched.paciente_id && errors.paciente_id ? "is-invalid" : ""
+                    }`}
+                    name="paciente_id"
+                    value={form.paciente_id}
+                    onChange={handleChange}
+                    onBlur={() => markTouched("paciente_id")}
+                  >
+                    <option value="">Seleccionar...</option>
+                    {pacientes.map(p => (
+                      <option key={p.id} value={p.id}>
+                        {p.dni} - {p.nombre} {p.apellido}
+                      </option>
+                    ))}
+                  </select>
+                  <label>Paciente</label>
+                  <div className="invalid-feedback">{errors.paciente_id}</div>
+                </div>
+              </div>
+
+              {/* MÉDICO */}
+              <div className="col-md-6">
+                <div className="form-floating">
+                  <select
+                    className={`form-select ${
+                      touched.medico_id && errors.medico_id ? "is-invalid" : ""
+                    }`}
+                    name="medico_id"
+                    value={form.medico_id}
+                    onChange={handleChange}
+                    onBlur={() => markTouched("medico_id")}
+                  >
+                    <option value="">Seleccionar...</option>
+                    {medicos.map(m => (
+                      <option key={m.id} value={m.id}>
+                        {m.nombre} {m.apellido} - Mat: {m.matricula}
+                      </option>
+                    ))}
+                  </select>
+                  <label>Médico</label>
+                  <div className="invalid-feedback">{errors.medico_id}</div>
+                </div>
+              </div>
+
+              {/* FECHA */}
+              <div className="col-md-6">
+                <div className="form-floating">
+                  <input
+                    type="date"
+                    name="fecha"
+                    className={`form-control ${
+                      touched.fecha && errors.fecha ? "is-invalid" : ""
+                    }`}
+                    value={form.fecha}
+                    onChange={handleChange}
+                    onBlur={() => markTouched("fecha")}
+                  />
+                  <label>Fecha</label>
+                  <div className="invalid-feedback">{errors.fecha}</div>
+                </div>
+              </div>
+
+              {/* HORARIO */}
+              <div className="col-md-6">
+                <div className="form-floating">
+                  <select
+                    className={`form-select ${
+                      touched.horario && errors.horario ? "is-invalid" : ""
+                    }`}
+                    name="horario"
+                    value={form.horario}
+                    onChange={handleChange}
+                    onBlur={() => markTouched("horario")}
+                  >
+                    <option value="">Seleccionar...</option>
+                    {horarios.map(h => (
+                      <option key={h} value={h}>{h}</option>
+                    ))}
+                  </select>
+                  <label>Horario</label>
+                  <div className="invalid-feedback">{errors.horario}</div>
+                </div>
+              </div>
+
+              {/* ESTADO */}
+              <div className="col-md-6">
+                <div className="form-floating">
+                  <select
+                    className={`form-select ${
+                      touched.estado_turno_id && errors.estado_turno_id ? "is-invalid" : ""
+                    }`}
+                    name="estado_turno_id"
+                    value={form.estado_turno_id}
+                    onChange={handleChange}
+                    onBlur={() => markTouched("estado_turno_id")}
+                  >
+                    <option value="">Seleccionar...</option>
+                    {estados.map(e => (
+                      <option key={e.id} value={e.id}>{e.nombre}</option>
+                    ))}
+                  </select>
+                  <label>Estado</label>
+                  <div className="invalid-feedback">{errors.estado_turno_id}</div>
+                </div>
+              </div>
+
+              {/* MOTIVO */}
+              <div className="col-md-6">
+                <div className="form-floating">
+                  <input
+                    className="form-control"
+                    name="motivo"
+                    value={form.motivo}
+                    onChange={handleChange}
+                  />
+                  <label>Motivo</label>
+                </div>
+              </div>
+
+              {/* OBSERVACIONES */}
+              <div className="col-12">
+                <div className="form-floating">
+                  <textarea
+                    className="form-control"
+                    name="observaciones"
+                    style={{ height: "80px" }}
+                    value={form.observaciones}
+                    onChange={handleChange}
+                  />
+                  <label>Observaciones</label>
+                </div>
+              </div>
+
+              {/* BOTONES */}
+              <div className="col-12 d-flex gap-2 mt-3">
+                <button className="btn btn-primary flex-grow-1" disabled={submitting || !isValid}>
+                  {submitting ? "Guardando..." : isEdit ? "Actualizar Turno" : "Guardar Turno"}
+                </button>
+
+                <button
+                  type="button"
+                  className="btn btn-outline-secondary"
+                  onClick={() => {
+                    setForm(EMPTY_FORM);
+                    setTouched({});
+                    setErrors({});
+                    if (onCancelEdit) onCancelEdit();
+                  }}
+                >
+                  {isEdit ? "Cancelar edición" : "Limpiar"}
+                </button>
+              </div>
+
+            </div>
+          </form>
         </div>
       </div>
     </div>
