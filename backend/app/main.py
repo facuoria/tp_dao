@@ -293,23 +293,26 @@ def borrar_paciente(especialidad_id: int):
     
 # ===================== AGENDA ==========================
 
-@app.get("/api/agenda/medico/{medico_id}")
-def listar_agenda_por_medico(medico_id: int):
+@app.get("/api/agenda")
+def listar_agenda():
     sql = """
         SELECT 
-            id,
-            medicos_id AS medico_id,
-            dia_semana,
-            DATE_FORMAT(hora_inicio, '%H:%i') AS hora_inicio,
-            DATE_FORMAT(hora_fin, '%H:%i') AS hora_fin,
-            duracion_min
-        FROM agenda_medico
-        WHERE medicos_id = %s
-        ORDER BY dia_semana, hora_inicio
+            a.id,
+            a.medicos_id AS medico_id,
+            m.nombre AS medico_nombre,
+            m.apellido AS medico_apellido,
+            a.dia_semana,
+            DATE_FORMAT(a.hora_inicio, '%H:%i') AS hora_inicio,
+            DATE_FORMAT(a.hora_fin, '%H:%i') AS hora_fin,
+            a.duracion_min
+        FROM agenda_medico a
+        JOIN medicos m ON a.medicos_id = m.id
+        ORDER BY m.apellido, a.dia_semana, a.hora_inicio
     """
     with get_connection() as conn, conn.cursor(dictionary=True) as cur:
-        cur.execute(sql, (medico_id,))
+        cur.execute(sql)
         return cur.fetchall()
+
 
 @app.post("/api/agenda", status_code=201)
 def crear_agenda(body: dict):

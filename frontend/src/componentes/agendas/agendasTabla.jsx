@@ -7,7 +7,7 @@ export default function AgendasTabla({ reloadKey }) {
 
   const loadAgenda = () => {
     setLoading(true);
-    fetch(`${API_BASE}/api/agenda/medico/1`) // <-- cambiar luego si querés seleccionar médico
+    fetch(`${API_BASE}/api/agenda`) // <-- cambiar luego si querés seleccionar médico
       .then((r) => r.json())
       .then(setItems)
       .finally(() => setLoading(false));
@@ -23,6 +23,7 @@ export default function AgendasTabla({ reloadKey }) {
     fetch(`${API_BASE}/api/agenda/${id}`, { method: "DELETE" })
       .then((res) => res.status === 204 && loadAgenda());
   };
+  const DIAS = ["Lunes","Martes","Miércoles","Jueves","Viernes","Sábado","Domingo"];
 
   return (
     <div
@@ -54,10 +55,11 @@ export default function AgendasTabla({ reloadKey }) {
             <table className="table table-hover table-striped">
               <thead className="table-light">
                 <tr className="text-center">
+                  <th>Médico</th>
                   <th>Día</th>
-                  <th>Inicio</th>
-                  <th>Fin</th>
-                  <th>Duración</th>
+                  <th>Inicio de jornada</th>
+                  <th>Fin de jornada</th>
+                  <th>Duración de turnos</th>
                   <th>Acciones</th>
                 </tr>
               </thead>
@@ -65,7 +67,8 @@ export default function AgendasTabla({ reloadKey }) {
               <tbody>
                 {items.map((a) => (
                   <tr key={a.id} className="text-center">
-                    <td>{a.dia_semana}</td>
+                    <td>{a.medico_nombre} {a.medico_apellido}</td>  
+                    <td>{DIAS[a.dia_semana]}</td>
                     <td>{a.hora_inicio}</td>
                     <td>{a.hora_fin}</td>
                     <td>{a.duracion_min} min</td>
