@@ -9,8 +9,8 @@ load_dotenv()
 CFG = {
     "host": os.getenv("MYSQL_HOST", "localhost"),
     "port": int(os.getenv("MYSQL_PORT", "3306")),
-    "user": os.getenv("MYSQL_USER", "root"),
-    "password": os.getenv("MYSQL_PASSWORD", "jbj953Vale"),
+    "user": os.getenv("MYSQL_USER", "turnero"),
+    "password": os.getenv("MYSQL_PASSWORD", "clave_segura"),
     "database": os.getenv("MYSQL_DB", "turnosMedicos"),
     "autocommit": False,
     "charset": "utf8",
@@ -83,6 +83,38 @@ def eliminar_paciente_por_id(paciente_id: int) -> int:  # <--- nombre alineado
         if cur: cur.close()
         if conn: conn.close()
 
+def actualizar_paciente(paciente_id: int, dni, nombre, apellido, mail, telefono, fecha_nacimiento) -> int:
+    sql = """
+        UPDATE pacientes
+        SET dni = %s,
+            nombre = %s,
+            apellido = %s,
+            mail = %s,
+            telefono = %s,
+            fecha_nacimiento = %s
+        WHERE id = %s
+    """
+    params = (dni, nombre, apellido, mail, telefono, fecha_nacimiento, paciente_id)
+    conn = None
+    cur = None
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+        cur.execute(sql, params)
+        conn.commit()
+        return cur.rowcount
+    except mysql.connector.Error as e:
+        if conn:
+            conn.rollback()
+        if e.errno == errorcode.ER_DUP_ENTRY:
+            raise ValueError(f"DNI ya existente: {dni}") from e
+        raise
+    finally:
+        if cur:
+            cur.close()
+        if conn:
+            conn.close()
+
 #----------- MEDICOS -------------
 
 def insertar_medicos(nombre, apellido, matricula, mail, especialidad_id):
@@ -126,6 +158,37 @@ def eliminar_medico_por_id(medico_id: int) -> int:
     
     #capaz tenga que ir un except aca
 
+    finally:
+        if cur:
+            cur.close()
+        if conn:
+            conn.close()
+
+def actualizar_medico(medico_id: int, nombre, apellido, matricula, mail, especialidad_id) -> int:
+    sql = """
+        UPDATE medicos
+        SET nombre = %s,
+            apellido = %s,
+            matricula = %s,
+            mail = %s,
+            especialidad_id = %s
+        WHERE id = %s
+    """
+    params = (nombre, apellido, matricula, mail, especialidad_id, medico_id)
+    conn = None
+    cur = None
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+        cur.execute(sql, params)
+        conn.commit()
+        return cur.rowcount
+    except mysql.connector.Error as e:
+        if conn:
+            conn.rollback()
+        if e.errno == errorcode.ER_DUP_ENTRY:
+            raise ValueError(f"Matricula ya existente: {matricula}") from e
+        raise
     finally:
         if cur:
             cur.close()

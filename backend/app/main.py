@@ -7,8 +7,10 @@ from SQL.db import (
     get_connection,
     insertar_paciente,
     eliminar_paciente_por_id,
+    actualizar_paciente,
     insertar_medicos,
     eliminar_medico_por_id,
+    actualizar_medico,
     insertar_especialidad,
     eliminar_especialidad_por_id,
     insertar_turno,
@@ -114,12 +116,51 @@ def borrar_paciente(paciente_id: int):
     except mysql.connector.Error:
         raise HTTPException(status_code=500, detail="Error al borrar paciente")
 
+# ---------- ACTUALIZAR PACIENTE (PUT) ----------
+@app.put("/api/pacientes/{paciente_id}")
+def actualizar_paciente_api(paciente_id: int, body: dict):
+    raw_dni = body.get("dni")
+    if raw_dni is None or str(raw_dni).strip() == "":
+        raise HTTPException(status_code=400, detail="Falta el campo obligatorio: dni")
+
+    try:
+        dni = int(raw_dni)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="El DNI debe ser numérico")
+
+    raw_fecha = body.get("fecha_nacimiento")
+    fecha_nacimiento = raw_fecha if raw_fecha else None
+
+    try:
+        cantidad = actualizar_paciente(
+            paciente_id,
+            dni,
+            body.get("nombre"),
+            body.get("apellido"),
+            body.get("mail"),
+            body.get("telefono"),
+            fecha_nacimiento,
+        )
+        if cantidad == 0:
+            raise HTTPException(status_code=404, detail="Paciente no encontrado")
+        return {"id": paciente_id}
+    except ValueError as ve:
+        raise HTTPException(status_code=400, detail=str(ve))
+    except mysql.connector.Error as e:
+        print("MySQL error:", e.errno, e.msg)
+        raise HTTPException(status_code=500, detail="Error al actualizar paciente")
+
 # ---------- LISTAR MEDICOS ----------
 @app.get("/api/medicos")
 def listar_medicos():
     sql = """ 
 
-        SELECT m.id, m.nombre, m.apellido, m.matricula, e.nombre AS especialidades
+        SELECT m.id,
+               m.nombre,
+               m.apellido,
+               m.matricula,
+               m.especialidad_id,
+               e.nombre AS especialidades
         FROM medicos m
         JOIN especialidades e ON m.especialidad_id = e.id
         ORDER BY id DESC
@@ -173,6 +214,39 @@ def borrar_paciente(medico_id: int):
         raise HTTPException(status_code=409, detail=str(ve))
     except mysql.connector.Error:
         raise HTTPException(status_code=500, detail="Error al borrar medico")
+
+# ----------- ACTUALIZAR MEDICO -------------
+@app.put("/api/medicos/{medico_id}")
+def actualizar_medico_api(medico_id: int, body: dict):
+    matricula = body.get("matricula")
+    if not matricula:
+        raise HTTPException(status_code=400, detail="Falta la matrícula")
+
+    nombre = body.get("nombre")
+    apellido = body.get("apellido")
+    mail = body.get("mail")
+    especialidad_id = body.get("especialidad_id")
+
+    if not especialidad_id:
+        raise HTTPException(status_code=400, detail="Falta seleccionar especialidad")
+
+    try:
+        actualizadas = actualizar_medico(
+            medico_id,
+            nombre,
+            apellido,
+            matricula,
+            mail,
+            especialidad_id
+        )
+        if actualizadas == 0:
+            raise HTTPException(status_code=404, detail="Medico no encontrado")
+        return {"id": medico_id}
+    except ValueError as ve:
+        raise HTTPException(status_code=409, detail=str(ve))
+    except mysql.connector.Error as e:
+        print("MySQL error:", e.errno, e.msg)
+        raise HTTPException(status_code=500, detail="Error al actualizar medico")
     
 #------------ VISUALIZAR ESPECIALIDAD ---------------
 @app.get("/api/especialidades")

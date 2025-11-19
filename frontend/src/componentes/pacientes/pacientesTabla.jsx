@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { API_BASE } from "../../api.js";
 
-function PacienteTable({ reloadKey }) {
+function PacienteTable({ reloadKey, onEdit }) {
   const [pacientes, setPacientes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -47,7 +47,7 @@ function PacienteTable({ reloadKey }) {
   }, [reloadKey]);
 
   return (
-  <div className="card shadow-lg border-0 rounded-4 mt-4">
+  <div className="card shadow-lg border-0 rounded-4 mt-4 w-100">
     <div className="card-header bg-white border-0 pt-4 pb-2 d-flex justify-content-between align-items-center rounded-top-4">
       <div>
         <h2 className="h5 fw-bold mb-1">Pacientes registrados</h2>
@@ -93,6 +93,8 @@ function PacienteTable({ reloadKey }) {
                 <th style={{ width: "12%" }}>DNI</th>
                 <th style={{ width: "20%" }}>Nombre</th>
                 <th style={{ width: "20%" }}>Apellido</th>
+                <th style={{ width: "20%" }}>Mail</th>
+                <th style={{ width: "16%" }}>Teléfono</th>
                 <th style={{ width: "12%" }}>Acciones</th>
               </tr>
             </thead>
@@ -103,8 +105,16 @@ function PacienteTable({ reloadKey }) {
                   <td>{p.dni}</td>
                   <td>{p.nombre}</td>
                   <td>{p.apellido}</td>
+                  <td>{p.mail || "-"}</td>
+                  <td>{p.telefono || "-"}</td>
 
-                  <td>
+                  <td className="d-flex justify-content-center gap-2">
+                    <button
+                      className="btn btn-outline-secondary btn-sm rounded-3 px-3 shadow-sm"
+                      onClick={() => onEdit && onEdit(p)}
+                    >
+                      Editar
+                    </button>
                     <button
                       className="btn btn-danger btn-sm rounded-3 px-3 shadow-sm"
                       onClick={() => deletePaciente(p.id)}
@@ -120,7 +130,7 @@ function PacienteTable({ reloadKey }) {
       )}
     </div>
   </div>
-);
+  );
 }
 
 export default PacienteTable;

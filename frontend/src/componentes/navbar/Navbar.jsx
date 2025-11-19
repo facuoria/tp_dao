@@ -15,6 +15,7 @@ export default function Navbar() {
         <ul className="navbar-nav ms-auto">
           <li className="nav-item"><Link className="nav-link" to="/pacientes">Pacientes</Link></li>
           <li className="nav-item"><Link className="nav-link" to="/medicos">Médicos</Link></li>
+          <li className="nav-item"><Link className="nav-link" to="/turnos">Turnos</Link></li>
           <li className="nav-item"><Link className="nav-link" to="/especialidades">Especialidades</Link></li>
           <li className="nav-item"><Link className="nav-link" to="/recetas">Recetas</Link></li>
         </ul>

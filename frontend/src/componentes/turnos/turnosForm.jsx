@@ -21,6 +21,7 @@ export default function TurnoForm({ onCreated }) {
   const [alert, setAlert] = useState(null);
   const [showForm, setShowForm] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
 
   // ================================
   // Cargar listas
@@ -78,232 +79,223 @@ export default function TurnoForm({ onCreated }) {
     });
   };
 
-  // ================================
-  // Handlers
-  // ================================
   const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    setForm((prev) => ({ ...prev, [name]: value }));
+    setAlert(null);
   };
 
-  // ================================
-  // Enviar formulario
-  // ================================
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSubmitting(true);
     setAlert(null);
 
-    if (!form.horario) {
-      setAlert({ ok: false, text: "Debes seleccionar un horario" });
-      setSubmitting(false);
-      return;
-    }
-
-    const fechaCompleta = `${form.fecha}T${form.horario}`;
-
-    const body = {
-      paciente_id: Number(form.paciente_id),
-      medico_id: Number(form.medico_id),
-      fecha_hora: fechaCompleta,
-      duracion_min: Number(form.duracion_min),
-      estado_turno_id: Number(form.estado_turno_id),
-      motivo: form.motivo,
-      observaciones: form.observaciones,
-    };
-
     try {
+      const body = {
+        paciente_id: form.paciente_id,
+        medico_id: form.medico_id,
+        fecha_hora: form.fecha ? `${form.fecha} ${form.horario || "00:00"}` : "",
+        duracion_min: form.duracion_min,
+        estado_turno_id: form.estado_turno_id,
+        motivo: form.motivo,
+        observaciones: form.observaciones,
+      };
+
       const res = await fetch("http://localhost:8000/api/turnos", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
       });
 
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.detail);
+      if (res.status === 201) {
+        setAlert({ ok: true, text: "Turno guardado correctamente." });
+        setForm(EMPTY_FORM);
+        setReloadKey((k) => k + 1);
+        if (onCreated) onCreated();
+      } else {
+        const data = await res.json().catch(() => ({}));
+        setAlert({ ok: false, text: data.detail || "No se pudo guardar el turno." });
       }
-
-      setAlert({ ok: true, text: "Turno registrado con éxito" });
-      setForm(EMPTY_FORM);
-      if (onCreated) onCreated();
-
     } catch (err) {
-      setAlert({ ok: false, text: err.message });
+      setAlert({ ok: false, text: err.message || "Error al guardar turno." });
+    } finally {
+      setSubmitting(false);
     }
-
-    setSubmitting(false);
   };
 
   return (
-    <div className="d-flex justify-content-center align-items-start gap-5 mt-4">
+    <div className="container py-4">
+      <div className="d-flex flex-wrap justify-content-center align-items-start gap-4">
 
-      {/* BOTÓN */}
-      <div className="text-center">
-        <button
-          className="btn btn-primary btn-lg px-4"
-          onClick={() => setShowForm(!showForm)}
-        >
-          {showForm ? "Cerrar formulario" : "Registrar Turno"}
-        </button>
+        {/* Botón + Formulario */}
+        <div className="d-flex flex-column align-items-center" style={{ width: "460px", maxWidth: "100%" }}>
+          <div className="text-center w-100">
+            <button
+              className="btn btn-primary btn-lg px-4"
+              onClick={() => setShowForm(!showForm)}
+            >
+              {showForm ? "Cerrar formulario" : "Registrar Turno"}
+            </button>
+          </div>
 
-        {/* FORMULARIO ANIMADO */}
-        <div className={`slide-left mt-4 ${showForm ? "show" : ""}`}>
+          <div className={`slide-left mt-4 w-100 ${showForm ? "show" : ""}`}>
 
-          <div className="card shadow border-0 rounded-4" style={{ width: "420px" }}>
-            <div className="card-header text-center bg-white border-0">
-              <h2 className="h5 fw-bold">Registrar Turno</h2>
-              <p className="text-muted small">Complete los datos del turno.</p>
-            </div>
+            <div className="card shadow border-0 rounded-4">
+              <div className="card-header text-center bg-white border-0">
+                <h2 className="h5 fw-bold">Registrar Turno</h2>
+                <p className="text-muted small">Complete los datos del turno.</p>
+              </div>
 
-            <div className="card-body">
+              <div className="card-body">
 
-              {alert && (
-                <div className={`alert ${alert.ok ? "alert-success" : "alert-danger"}`}>
-                  {alert.text}
-                </div>
-              )}
-
-              <form onSubmit={handleSubmit} className="d-flex flex-column gap-3">
-
-                {/* PACIENTE */}
-                <div className="form-floating">
-                  <select
-                    className="form-select"
-                    name="paciente_id"
-                    value={form.paciente_id}
-                    onChange={handleChange}
-                  >
-                    <option value="">Seleccionar...</option>
-                    {pacientes.map(p => (
-                      <option key={p.id} value={p.id}>
-                        {p.dni} - {p.nombre} {p.apellido}
-                      </option>
-                    ))}
-                  </select>
-                  <label>Paciente</label>
-                </div>
-
-                {/* MÉDICO */}
-                <div className="form-floating">
-                  <select
-                    className="form-select"
-                    name="medico_id"
-                    value={form.medico_id}
-                    onChange={handleChange}
-                  >
-                    <option value="">Seleccionar...</option>
-                    {medicos.map(m => (
-                      <option key={m.id} value={m.id}>
-                        {m.nombre} {m.apellido} - Mat: {m.matricula}
-                      </option>
-                    ))}
-                  </select>
-                  <label>Médico</label>
-                </div>
-
-                {/* FECHA */}
-                <div className="form-floating">
-                  <input
-                    type="date"
-                    className="form-control"
-                    name="fecha"
-                    value={form.fecha}
-                    onChange={handleChange}
-                  />
-                  <label>Fecha</label>
-                </div>
-
-                {form.fecha && (
-                  <small className="text-muted ms-1">
-                    {formatoFechaHumano(form.fecha)}
-                  </small>
+                {alert && (
+                  <div className={`alert ${alert.ok ? "alert-success" : "alert-danger"}`}>
+                    {alert.text}
+                  </div>
                 )}
 
-                {/* DURACIÓN */}
-                <div className="form-floating">
-                  <input
-                    type="number"
-                    className="form-control"
-                    name="duracion_min"
-                    min="5"
-                    step="5"
-                    value={form.duracion_min}
-                    onChange={handleChange}
-                  />
-                  <label>Duración (min)</label>
-                </div>
+                <form onSubmit={handleSubmit} className="d-flex flex-column gap-3">
 
-                {/* HORARIO */}
-                <div className="form-floating">
-                  <select
-                    className="form-select"
-                    name="horario"
-                    value={form.horario}
-                    onChange={handleChange}
-                    disabled={!form.fecha}
-                  >
-                    <option value="">Seleccionar horario...</option>
-                    {horarios.map(h => (
-                      <option key={h} value={h}>{h}</option>
-                    ))}
-                  </select>
-                  <label>Horario disponible</label>
-                </div>
+                  <div className="d-flex gap-2 align-items-center text-muted small">
+                    <span>Fecha seleccionada:</span>
+                    <strong>{form.fecha ? formatoFechaHumano(form.fecha) : "-----"}</strong>
+                  </div>
 
-                {/* ESTADO DEL TURNO */}
-                <div className="form-floating">
-                  <select
-                    className="form-select"
-                    name="estado_turno_id"
-                    value={form.estado_turno_id}
-                    onChange={handleChange}
-                  >
-                    <option value="">Seleccionar...</option>
-                    {estados.map((e, idx) => (
-                      <option key={idx} value={idx + 1}>
-                        {e.nombre}
-                      </option>
-                    ))}
-                  </select>
-                  <label>Estado del turno</label>
-                </div>
+                  {/* PACIENTE */}
+                  <div className="form-floating">
+                    <select
+                      className="form-select"
+                      name="paciente_id"
+                      value={form.paciente_id}
+                      onChange={handleChange}
+                    >
+                      <option value="">Seleccionar...</option>
+                      {pacientes.map(p => (
+                        <option key={p.id} value={p.id}>
+                          {p.dni} - {p.nombre} {p.apellido}
+                        </option>
+                      ))}
+                    </select>
+                    <label>Paciente</label>
+                  </div>
 
-                {/* MOTIVO */}
-                <div className="form-floating">
-                  <input
-                    className="form-control"
-                    name="motivo"
-                    value={form.motivo}
-                    onChange={handleChange}
-                    placeholder="Motivo"
-                  />
-                  <label>Motivo</label>
-                </div>
+                  {/* MÉDICO */}
+                  <div className="form-floating">
+                    <select
+                      className="form-select"
+                      name="medico_id"
+                      value={form.medico_id}
+                      onChange={handleChange}
+                    >
+                      <option value="">Seleccionar...</option>
+                      {medicos.map(m => (
+                        <option key={m.id} value={m.id}>
+                          {m.nombre} {m.apellido} - Mat: {m.matricula}
+                        </option>
+                      ))}
+                    </select>
+                    <label>Médico</label>
+                  </div>
 
-                {/* OBSERVACIONES */}
-                <div className="form-floating">
-                  <textarea
-                    className="form-control"
-                    name="observaciones"
-                    style={{ height: "80px" }}
-                    value={form.observaciones}
-                    onChange={handleChange}
-                    placeholder="Observaciones"
-                  />
-                  <label>Observaciones</label>
-                </div>
+                  {/* FECHA */}
+                  <div className="form-floating">
+                    <input
+                      type="date"
+                      name="fecha"
+                      className="form-control"
+                      value={form.fecha}
+                      onChange={handleChange}
+                    />
+                    <label>Fecha</label>
+                  </div>
 
-                <button className="btn btn-primary w-100" disabled={submitting}>
-                  {submitting ? "Guardando..." : "Guardar Turno"}
-                </button>
+                  {/* DURACIÓN */}
+                  <div className="form-floating">
+                    <input
+                      type="number"
+                      name="duracion_min"
+                      className="form-control"
+                      value={form.duracion_min}
+                      min={5}
+                      onChange={handleChange}
+                    />
+                    <label>Duración (min)</label>
+                  </div>
 
-              </form>
+                  {/* HORARIOS DISPONIBLES */}
+                  <div className="form-floating">
+                    <select
+                      className="form-select"
+                      name="horario"
+                      value={form.horario}
+                      onChange={handleChange}
+                    >
+                      <option value="">Seleccionar horario...</option>
+                      {horarios.map((h) => (
+                        <option key={h} value={h}>{h}</option>
+                      ))}
+                    </select>
+                    <label>Horario disponible</label>
+                  </div>
+
+                  {/* ESTADO DEL TURNO */}
+                  <div className="form-floating">
+                    <select
+                      className="form-select"
+                      name="estado_turno_id"
+                      value={form.estado_turno_id}
+                      onChange={handleChange}
+                    >
+                      <option value="">Seleccionar...</option>
+                      {estados.map((e, idx) => (
+                        <option key={idx} value={idx + 1}>
+                          {e.nombre}
+                        </option>
+                      ))}
+                    </select>
+                    <label>Estado del turno</label>
+                  </div>
+
+                  {/* MOTIVO */}
+                  <div className="form-floating">
+                    <input
+                      className="form-control"
+                      name="motivo"
+                      value={form.motivo}
+                      onChange={handleChange}
+                      placeholder="Motivo"
+                    />
+                    <label>Motivo</label>
+                  </div>
+
+                  {/* OBSERVACIONES */}
+                  <div className="form-floating">
+                    <textarea
+                      className="form-control"
+                      name="observaciones"
+                      style={{ height: "80px" }}
+                      value={form.observaciones}
+                      onChange={handleChange}
+                      placeholder="Observaciones"
+                    />
+                    <label>Observaciones</label>
+                  </div>
+
+                  <button className="btn btn-primary w-100" disabled={submitting}>
+                    {submitting ? "Guardando..." : "Guardar Turno"}
+                  </button>
+
+                </form>
+              </div>
             </div>
           </div>
         </div>
-      </div>
 
-      <TurnosTable />
+        {/* Tabla a la derecha */}
+        <div className="flex-grow-1" style={{ minWidth: "380px", maxWidth: "900px" }}>
+          <TurnosTable reloadKey={reloadKey} />
+        </div>
+      </div>
     </div>
   );
 }

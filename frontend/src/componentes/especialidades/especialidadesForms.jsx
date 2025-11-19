@@ -29,11 +29,11 @@ export default function EspecialidadesForm({ onSuccess }) {
     return Object.keys(e).length === 0;
   }
 
-  const markTouched = (f) => setTouched(prev => ({ ...prev, [f]: true }));
+  const markTouched = (f) => setTouched((prev) => ({ ...prev, [f]: true }));
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setForm(prev => ({ ...prev, [name]: value }));
+    setForm((prev) => ({ ...prev, [name]: value }));
     setAlert(null);
   };
 
@@ -64,7 +64,7 @@ export default function EspecialidadesForm({ onSuccess }) {
       setTouched({});
       setErrors({});
 
-      if (onSuccess) onSuccess(); // 🔥 recargar tabla
+      if (onSuccess) onSuccess();
     } catch (err) {
       setAlert({ ok: false, text: err.message });
     } finally {
@@ -75,22 +75,18 @@ export default function EspecialidadesForm({ onSuccess }) {
   const invalidNombre = touched.nombre && errors.nombre;
 
   return (
-    <div className="container py-4 text-center">
-
-      {/* BOTÓN */}
-      <button
-        className="btn btn-primary btn-lg px-4 mb-4"
-        onClick={() => setShowForm(!showForm)}
-      >
-        {showForm ? "Cerrar formulario" : "Registrar Especialidad"}
-      </button>
-
-      {/* FORM */}
-      {showForm && (
-        <div
-          className="card shadow-lg border-0 rounded-4 p-4 mx-auto"
-          style={{ maxWidth: "600px" }}
+    <div className="d-flex flex-column align-items-center gap-3" style={{ width: "100%", maxWidth: "480px" }}>
+      <div className="text-center w-100">
+        <button
+          className="btn btn-primary btn-lg px-4"
+          onClick={() => setShowForm(!showForm)}
         >
+          {showForm ? "Cerrar formulario" : "Registrar Especialidad"}
+        </button>
+      </div>
+
+      <div className={`slide-left w-100 ${showForm ? "show" : ""}`}>
+        <div className="card shadow-lg border-0 rounded-4 p-4" style={{ width: "100%" }}>
           {alert && (
             <div className={`alert ${alert.ok ? "alert-success" : "alert-danger"}`}>
               {alert.text}
@@ -106,11 +102,11 @@ export default function EspecialidadesForm({ onSuccess }) {
                 className={`form-control rounded-3 ${
                   invalidNombre ? "is-invalid" : ""
                 }`}
-                placeholder="Traumatología"
+                placeholder="Traumatologia"
                 value={form.nombre}
                 onChange={(e) => {
                   const onlyLetters = e.target.value.replace(
-                    /[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g,
+                    /[^a-zA-Z áéíóúÁÉÍÓÚñÑ'\s]/g,
                     ""
                   );
                   handleChange({ target: { name: "nombre", value: onlyLetters } });
@@ -149,7 +145,7 @@ export default function EspecialidadesForm({ onSuccess }) {
             </div>
           </form>
         </div>
-      )}
+      </div>
     </div>
   );
 }

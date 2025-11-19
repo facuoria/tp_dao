@@ -5,6 +5,7 @@ import PacientesPage from "./Pages/PacientesPage";
 import MedicosPage from "./Pages/MedicosPage";
 import EspecialidadesPage from "./Pages/EspecialidadesPage";
 import RecetasPage from "./Pages/RecetasPage";
+import TurnosPage from "./Pages/TurnosPage";
 
 
 function App() {
@@ -17,6 +18,7 @@ function App() {
         <Route path="/medicos" element={<MedicosPage />} />
         <Route path="/especialidades" element={<EspecialidadesPage />} />
         <Route path="/recetas" element={<RecetasPage />} />
+        <Route path="/turnos" element={<TurnosPage />} />
       </Routes>
     </Router>
   );
