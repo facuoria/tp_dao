@@ -7,11 +7,11 @@ from dotenv import load_dotenv
 load_dotenv()
 
 CFG = {
-    "host": os.getenv("MYSQL_HOST", "localhost"),
-    "port": int(os.getenv("MYSQL_PORT", "3306")),
-    "user": os.getenv("MYSQL_USER", "root"),
-    "password": os.getenv("MYSQL_PASSWORD", "rolpa"),
-    "database": os.getenv("MYSQL_DB", "turnosMedicos"),
+    "host": os.getenv("DB_HOST", "localhost"),
+    "port": int(os.getenv("DB_PORT", "3306")),
+    "user": os.getenv("DB_USER", "root"),
+    "password": os.getenv("DB_PASSWORD", "rolpa"),
+    "database": os.getenv("DB_NAME", "turnosMedicos"),
     "autocommit": False,
     "charset": "utf8",
 }
@@ -27,7 +27,7 @@ def test_connection():
             cur.execute("SELECT DATABASE(), VERSION()")
             print("Conectado a:", cur.fetchone())
     except Error as e:
-        print("Error de conexión:", e)
+        print("Error de conexion:", e)
         raise
 
 #----------- PACIENTES ------------
@@ -53,7 +53,7 @@ def insertar_paciente(dni, nombre, apellido, mail, telefono, fecha_nacimiento):
         if conn:
             conn.rollback()
         if e.errno == errorcode.ER_DUP_ENTRY:
-            # 👇 mensaje claro para el front
+            # TODO: mensaje claro para el front
             raise ValueError(f"DNI ya existente: {dni}") from e
         raise
     finally:
@@ -82,6 +82,38 @@ def eliminar_paciente_por_id(paciente_id: int) -> int:  # <--- nombre alineado
     finally:
         if cur: cur.close()
         if conn: conn.close()
+
+def actualizar_paciente(paciente_id: int, dni, nombre, apellido, mail, telefono, fecha_nacimiento) -> int:
+    sql = """
+        UPDATE pacientes
+        SET dni = %s,
+            nombre = %s,
+            apellido = %s,
+            mail = %s,
+            telefono = %s,
+            fecha_nacimiento = %s
+        WHERE id = %s
+    """
+    params = (dni, nombre, apellido, mail, telefono, fecha_nacimiento, paciente_id)
+    conn = None
+    cur = None
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+        cur.execute(sql, params)
+        conn.commit()
+        return cur.rowcount
+    except mysql.connector.Error as e:
+        if conn:
+            conn.rollback()
+        if e.errno == errorcode.ER_DUP_ENTRY:
+            raise ValueError(f"DNI ya existente: {dni}") from e
+        raise
+    finally:
+        if cur:
+            cur.close()
+        if conn:
+            conn.close()
 
 #----------- MEDICOS -------------
 
@@ -126,6 +158,37 @@ def eliminar_medico_por_id(medico_id: int) -> int:
     
     #capaz tenga que ir un except aca
 
+    finally:
+        if cur:
+            cur.close()
+        if conn:
+            conn.close()
+
+def actualizar_medico(medico_id: int, nombre, apellido, matricula, mail, especialidad_id) -> int:
+    sql = """
+        UPDATE medicos
+        SET nombre = %s,
+            apellido = %s,
+            matricula = %s,
+            mail = %s,
+            especialidad_id = %s
+        WHERE id = %s
+    """
+    params = (nombre, apellido, matricula, mail, especialidad_id, medico_id)
+    conn = None
+    cur = None
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+        cur.execute(sql, params)
+        conn.commit()
+        return cur.rowcount
+    except mysql.connector.Error as e:
+        if conn:
+            conn.rollback()
+        if e.errno == errorcode.ER_DUP_ENTRY:
+            raise ValueError(f"Matricula ya existente: {matricula}") from e
+        raise
     finally:
         if cur:
             cur.close()
@@ -180,7 +243,6 @@ def eliminar_especialidad_por_id(especialidad_id: int) -> int:
             cur.close()
         if conn:
             conn.close()
-
 #-------------------- TURNOS -----------------------
 
 def insertar_turno(paciente_id, medico_id, fecha_hora, duracion_min,
@@ -189,10 +251,10 @@ def insertar_turno(paciente_id, medico_id, fecha_hora, duracion_min,
     cur = None
     try:
         conn = get_connection()
-        # no hace falta dictionary=True acá
+        # no hace falta dictionary=True aqui
         cur = conn.cursor()
 
-        # 1) Verificar si el médico ya tiene turno en ese horario
+        # 1) Verificar si el medico ya tiene turno en ese horario
         sql_medico = """
             SELECT id FROM turnos
             WHERE medicos_id = %s
@@ -200,7 +262,7 @@ def insertar_turno(paciente_id, medico_id, fecha_hora, duracion_min,
         """
         cur.execute(sql_medico, (medico_id, fecha_hora))
         if cur.fetchone():
-            raise ValueError("El médico ya tiene un turno asignado en ese horario.")
+            raise ValueError("El medico ya tiene un turno asignado en ese horario.")
 
         # 2) Verificar si el paciente ya tiene turno en ese horario
         sql_paciente = """

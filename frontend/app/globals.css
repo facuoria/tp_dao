@@ -1,0 +1,14 @@
+@import "tailwindcss";
+
+/* tus utilidades personalizadas */
+:root { color-scheme: light dark; }
+body { @apply bg-white text-gray-900 dark:bg-neutral-950 dark:text-neutral-100; }
+.container { @apply max-w-6xl mx-auto px-4; }
+.card { @apply rounded-2xl shadow p-4 bg-white dark:bg-neutral-900; }
+.btn { @apply inline-flex items-center gap-2 rounded-xl px-4 py-2 border border-transparent bg-gray-900 text-white hover:bg-gray-800 active:scale-[.99]; }
+.btn-outline { @apply inline-flex items-center gap-2 rounded-xl px-4 py-2 border border-gray-300 hover:bg-gray-50 dark:border-neutral-700 dark:hover:bg-neutral-800; }
+.input { @apply w-full rounded-xl border border-gray-300 px-3 py-2 dark:border-neutral-700 bg-white dark:bg-neutral-900; }
+.label { @apply block text-sm mb-1 font-medium; }
+.table { @apply w-full border-collapse; }
+.table th, .table td { @apply border-b border-gray-200 dark:border-neutral-800 py-2 text-sm; }
+.link { @apply text-blue-600 hover:underline dark:text-blue-400; }

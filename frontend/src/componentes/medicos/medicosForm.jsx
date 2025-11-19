@@ -1,13 +1,12 @@
 import { useEffect, useState } from "react";
-import MedicoTable from "./medicosTabla.jsx";
+import { API_BASE } from "../../api.js";
 
-export default function MedicoForm() {
+export default function MedicoForm({ onSuccess, editingMedico, onCancelEdit }) {
   const EMPTY_FORM = {
     nombre: "",
     apellido: "",
     matricula: "",
     mail: "",
-    especialidad: "",
     especialidad_id: ""
   };
 
@@ -16,169 +15,175 @@ export default function MedicoForm() {
   const [errors, setErrors] = useState({});
   const [alert, setAlert] = useState(null);
   const [submitting, setSubmitting] = useState(false);
-
-  // Animaciones del form
-  const [showForm, setShowForm] = useState(false);
-  const [isClosing, setIsClosing] = useState(false);
-
-  // Dropdown de especialidades
   const [especialidades, setEspecialidades] = useState([]);
+  const [showForm, setShowForm] = useState(false);
 
-  // ======================= VALIDACION ========================
+  const isEdit = Boolean(editingMedico?.id);
+
   const validate = () => {
-    const newErr = {};
-    if (!form.nombre.trim()) newErr.nombre = "El nombre es obligatorio";
-    if (!form.apellido.trim()) newErr.apellido = "El apellido es obligatorio";
-
-    if (!/^\d+$/.test(form.matricula))
-      newErr.matricula = "Solo números";
-
-    if (!form.especialidad_id)
-      newErr.especialidad_id = "Elegí una especialidad";
-
-    return newErr;
+    const e = {};
+    if (!form.nombre.trim()) e.nombre = "El nombre es obligatorio";
+    if (!form.apellido.trim()) e.apellido = "El apellido es obligatorio";
+    if (!/^\d+$/.test(form.matricula)) e.matricula = "La matrícula debe ser numérica";
+    if (!form.especialidad_id) e.especialidad_id = "Elegí una especialidad";
+    return e;
   };
 
   useEffect(() => {
     setErrors(validate());
   }, [form]);
 
-  const isFormValid = Object.keys(errors).length === 0;
+  useEffect(() => {
+    fetch(`${API_BASE}/api/especialidades`)
+      .then((r) => r.json())
+      .then(setEspecialidades)
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    if (editingMedico) {
+      setForm({
+        nombre: editingMedico.nombre ?? "",
+        apellido: editingMedico.apellido ?? "",
+        matricula: editingMedico.matricula ? String(editingMedico.matricula) : "",
+        mail: editingMedico.mail ?? "",
+        especialidad_id: editingMedico.especialidad_id ?? editingMedico.especialidades_id ?? editingMedico.especialidades ?? ""
+      });
+      setTouched({});
+      setErrors({});
+      setAlert(null);
+      setShowForm(true);
+    } else {
+      setForm(EMPTY_FORM);
+      setTouched({});
+      setErrors({});
+    }
+  }, [editingMedico]);
+
+  const isFormValid = Object.keys(errors).length === 0 && !submitting;
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
+    setAlert(null);
   };
 
   const markTouched = (f) =>
-    setTouched({ ...touched, [f]: true });
+    setTouched((prev) => ({ ...prev, [f]: true }));
 
-  // ======================= CARGAR ESPECIALIDADES ========================
-  useEffect(() => {
-    fetch("http://localhost:8000/api/especialidades")
-      .then((r) => r.json())
-      .then(setEspecialidades);
-  }, []);
-
-  // ======================= SUBMIT ========================
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!isFormValid) return;
     setSubmitting(true);
 
     try {
-      const res = await fetch("http://localhost:8000/api/medicos", {
-        method: "POST",
+      const endpoint = isEdit
+        ? `${API_BASE}/api/medicos/${editingMedico.id}`
+        : `${API_BASE}/api/medicos`;
+      const method = isEdit ? "PUT" : "POST";
+
+      const res = await fetch(endpoint, {
+        method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(form),
       });
 
-      if (res.status === 201) {
-        setAlert({ ok: true, text: "Médico registrado" });
+      if (res.status === 201 || res.status === 200) {
+        setAlert({ ok: true, text: isEdit ? "Médico actualizado" : "Médico registrado" });
         setForm(EMPTY_FORM);
         setTouched({});
+        if (onSuccess) onSuccess();
+        if (onCancelEdit) onCancelEdit();
       } else {
-        const data = await res.json();
-        setAlert({ ok: false, text: data.detail || "Error" });
+        const data = await res.json().catch(() => ({}));
+        setAlert({
+          ok: false,
+          text: data.detail || "Error al registrar/actualizar médico",
+        });
       }
     } catch {
       setAlert({ ok: false, text: "Error de conexión" });
-    }
-
-    setSubmitting(false);
-  };
-
-  // ===================== ANIMACION DEL FORM =====================
-  const toggleForm = () => {
-    if (showForm) {
-      setIsClosing(true);
-
-      setTimeout(() => {
-        setIsClosing(false);
-        setShowForm(false);
-      }, 400);
-    } else {
-      setShowForm(true);
+    } finally {
+      setSubmitting(false);
     }
   };
 
-  // =============================================================
-  // ======================= RETURN COMPLETO =====================
-  // =============================================================
   return (
-    <div className="d-flex flex-column flex-md-row justify-content-center align-items-start gap-5 mt-4">
-
-      {/* BOTÓN + FORM */}
-      <div className="text-center" style={{ position: "relative", top: "50px" }}>
-
+    <div className="d-flex flex-column align-items-center gap-3" style={{ width: "100%", maxWidth: "520px" }}>
+      <div className="text-center w-100">
         <button
           className="btn btn-primary btn-lg px-4"
-          onClick={toggleForm}
+          onClick={() => setShowForm(!showForm)}
         >
-          {showForm ? "Cerrar formulario" : "Registrar Médico"}
+          {showForm ? "Cerrar formulario" : isEdit ? "Editar Médico" : "Registrar Médico"}
         </button>
+        {isEdit && (
+          <div className="text-muted small mt-1">
+            Editando: {editingMedico?.nombre} {editingMedico?.apellido}
+          </div>
+        )}
+      </div>
 
-        {/* FORM ANIMADO */}
-        <div className={`slide-left mt-4 ${showForm ? "show" : ""} ${isClosing ? "closing" : ""}`}>
-
-          <div className="card shadow border-0 rounded-4" style={{ width: "380px" }}>
-            <div className="card-header text-center bg-white border-0">
-              <h2 className="h5 fw-bold">Registrar Médico</h2>
-              <p className="text-muted small">Complete los datos del médico.</p>
+      <div className={`slide-left w-100 ${showForm ? "show" : ""}`}>
+        <div className="card shadow border-0 rounded-4 p-4" style={{ width: "100%" }}>
+          {alert && (
+            <div className={`alert ${alert.ok ? "alert-success" : "alert-danger"}`}>
+              {alert.text}
             </div>
+          )}
 
-            <div className="card-body">
-
-              {alert && (
-                <div className={`alert ${alert.ok ? "alert-success" : "alert-danger"}`}>
-                  {alert.text}
-                </div>
-              )}
-
-              <form onSubmit={handleSubmit} noValidate className="d-flex flex-column gap-3">
-
-                {/* Nombre */}
+          <form onSubmit={handleSubmit}>
+            <div className="row g-3">
+              {/* Nombre */}
+              <div className="col-md-6">
                 <div className="form-floating">
                   <input
                     name="nombre"
-                    id="nombre"
-                    className={`form-control ${touched.nombre && errors.nombre ? "is-invalid" : ""}`}
-                    placeholder="Nombre"
+                    className={`form-control ${
+                      touched.nombre && errors.nombre ? "is-invalid" : ""
+                    }`}
                     value={form.nombre}
                     onChange={(e) => {
-                      const onlyLetters = e.target.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, "");
-                      handleChange({ target: { name: "nombre", value: onlyLetters } });
+                      const clean = e.target.value.replace(/[^a-zA-Z áéíóúÁÉÍÓÚñÑ']/g, "");
+                      handleChange({ target: { name: "nombre", value: clean } });
                     }}
                     onBlur={() => markTouched("nombre")}
                   />
                   <label>Nombre</label>
                   <div className="invalid-feedback">{errors.nombre}</div>
                 </div>
+              </div>
 
-                {/* Apellido */}
+              {/* Apellido */}
+              <div className="col-md-6">
                 <div className="form-floating">
                   <input
                     name="apellido"
-                    className={`form-control ${touched.apellido && errors.apellido ? "is-invalid" : ""}`}
-                    placeholder="Apellido"
+                    className={`form-control ${
+                      touched.apellido && errors.apellido ? "is-invalid" : ""
+                    }`}
                     value={form.apellido}
                     onChange={(e) => {
-                      const onlyLetters = e.target.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, "");
-                      handleChange({ target: { name: "apellido", value: onlyLetters } });
+                      const clean = e.target.value.replace(/[^a-zA-Z áéíóúÁÉÍÓÚñÑ']/g, "");
+                      handleChange({ target: { name: "apellido", value: clean } });
                     }}
                     onBlur={() => markTouched("apellido")}
                   />
                   <label>Apellido</label>
                   <div className="invalid-feedback">{errors.apellido}</div>
                 </div>
+              </div>
 
-                {/* Matrícula */}
+              {/* Matrícula */}
+              <div className="col-md-6">
                 <div className="form-floating">
                   <input
                     name="matricula"
-                    className={`form-control ${touched.matricula && errors.matricula ? "is-invalid" : ""}`}
-                    placeholder="1234"
+                    className={`form-control ${
+                      touched.matricula && errors.matricula ? "is-invalid" : ""
+                    }`}
                     value={form.matricula}
                     onChange={(e) => {
-                      const nums = e.target.value.replace(/\D/g, "");
+                      const nums = e.target.value.replace(/\D+/g, "");
                       handleChange({ target: { name: "matricula", value: nums } });
                     }}
                     onBlur={() => markTouched("matricula")}
@@ -186,57 +191,74 @@ export default function MedicoForm() {
                   <label>Matrícula</label>
                   <div className="invalid-feedback">{errors.matricula}</div>
                 </div>
+              </div>
 
-                {/* Email */}
+              {/* Email */}
+              <div className="col-md-6">
                 <div className="form-floating">
                   <input
                     type="email"
                     name="mail"
                     className="form-control"
-                    placeholder="correo@ejemplo.com"
                     value={form.mail}
                     onChange={handleChange}
                   />
                   <label>Email</label>
                 </div>
+              </div>
 
-                {/* Especialidad */}
+              {/* Especialidad */}
+              <div className="col-12">
                 <div className="form-floating">
                   <select
                     name="especialidad_id"
-                    className={`form-select ${touched.especialidad_id && errors.especialidad_id ? "is-invalid" : ""}`}
+                    className={`form-select ${
+                      touched.especialidad_id && errors.especialidad_id
+                        ? "is-invalid"
+                        : ""
+                    }`}
                     value={form.especialidad_id}
                     onChange={handleChange}
                     onBlur={() => markTouched("especialidad_id")}
                   >
                     <option value="">Seleccionar...</option>
-                    {especialidades.map(e => (
-                      <option key={e.id} value={e.id}>{e.nombre}</option>
+                    {especialidades.map((e) => (
+                      <option key={e.id} value={e.id}>
+                        {e.nombre}
+                      </option>
                     ))}
                   </select>
                   <label>Especialidad</label>
                   <div className="invalid-feedback">{errors.especialidad_id}</div>
                 </div>
+              </div>
 
+              {/* BOTONES */}
+              <div className="col-12 d-flex gap-2 mt-3">
                 <button
-                  className="btn btn-primary w-100"
+                  className="btn btn-primary flex-grow-1"
                   disabled={!isFormValid || submitting}
                 >
-                  {submitting ? "Guardando..." : "Guardar Médico"}
+                  {submitting ? "Guardando..." : isEdit ? "Actualizar Médico" : "Guardar Médico"}
                 </button>
 
-              </form>
-
+                <button
+                  type="button"
+                  className="btn btn-outline-secondary"
+                  onClick={() => {
+                    setForm(EMPTY_FORM);
+                    setTouched({});
+                    setErrors({});
+                    onCancelEdit && onCancelEdit();
+                  }}
+                >
+                  {isEdit ? "Cancelar edición" : "Limpiar"}
+                </button>
+              </div>
             </div>
-          </div>
+          </form>
         </div>
       </div>
-
-      {/* TABLA */}
-      <div style={{ position: "relative", top: "50px" }}>
-        <MedicoTable />
-      </div>
-
     </div>
   );
 }

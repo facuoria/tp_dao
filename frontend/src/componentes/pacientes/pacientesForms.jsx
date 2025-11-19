@@ -1,6 +1,5 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { API_BASE } from "../../api.js";
-import PacienteTable from "./pacientesTabla.jsx";
 
 const EMPTY_FORM = {
   dni: "",
@@ -11,14 +10,38 @@ const EMPTY_FORM = {
   fecha_nacimiento: "",
 };
 
-export default function PacienteForm() {
+export default function PacienteForm({ onSuccess, editingPaciente, onCancelEdit }) {
   const [form, setForm] = useState(EMPTY_FORM);
   const [touched, setTouched] = useState({});
   const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
   const [alert, setAlert] = useState(null);
-  const [reloadKey, setReloadKey] = useState(0);
   const [showForm, setShowForm] = useState(false);
+
+  const isEdit = Boolean(editingPaciente?.id);
+
+  useEffect(() => {
+    if (editingPaciente) {
+      setForm({
+        dni: String(editingPaciente.dni ?? ""),
+        nombre: editingPaciente.nombre ?? "",
+        apellido: editingPaciente.apellido ?? "",
+        mail: editingPaciente.mail ?? "",
+        telefono: editingPaciente.telefono ?? "",
+        fecha_nacimiento: editingPaciente.fecha_nacimiento
+          ? editingPaciente.fecha_nacimiento.slice(0, 10)
+          : "",
+      });
+      setTouched({});
+      setErrors({});
+      setShowForm(true);
+      setAlert(null);
+    } else {
+      setForm(EMPTY_FORM);
+      setTouched({});
+      setErrors({});
+    }
+  }, [editingPaciente]);
 
   // ----------------------------
   // VALIDACIONES
@@ -65,7 +88,7 @@ export default function PacienteForm() {
   }
 
   // ----------------------------
-  // ENVÍO (VALIDACIÓN DE DNI SOLO ACA)
+  // ENVÍO DEL FORM
   // ----------------------------
   async function handleSubmit(e) {
     e.preventDefault();
@@ -75,8 +98,13 @@ export default function PacienteForm() {
     setAlert(null);
 
     try {
-      const res = await fetch(`${API_BASE}/api/pacientes`, {
-        method: "POST",
+      const endpoint = isEdit
+        ? `${API_BASE}/api/pacientes/${editingPaciente.id}`
+        : `${API_BASE}/api/pacientes`;
+      const method = isEdit ? "PUT" : "POST";
+
+      const res = await fetch(endpoint, {
+        method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...form,
@@ -89,281 +117,183 @@ export default function PacienteForm() {
         let msg = "No se pudo guardar el paciente.";
         try {
           const json = await res.json();
-          msg = json.detail || json.message || msg; // mensaje del backend (DNI duplicado)
+          msg = json.detail || json.message || msg;
         } catch (_) {}
         throw new Error(msg);
       }
 
-      const payload = await res.json().catch(() => ({}));
-      const id = payload.id ?? "";
-
       setAlert({
         ok: true,
-        text: `Paciente creado correctamente${id ? ` (ID ${id})` : ""}.`,
+        text: isEdit ? "Paciente actualizado correctamente." : "Paciente creado correctamente.",
       });
 
       setForm(EMPTY_FORM);
       setTouched({});
       setErrors({});
-      setReloadKey((k) => k + 1); // recargar tabla
+
+      if (onSuccess) onSuccess();
+      if (onCancelEdit) onCancelEdit();
     } catch (err) {
       setAlert({
         ok: false,
-        text:
-          err instanceof Error
-            ? err.message
-            : "Ocurrió un error al guardar el paciente.",
+        text: err.message ?? "Ocurrió un error al guardar el paciente.",
       });
     } finally {
       setSubmitting(false);
     }
   }
 
-  const dniInvalid = touched.dni && errors.dni;
-  const nombreInvalid = touched.nombre && errors.nombre;
-  const apellidoInvalid = touched.apellido && errors.apellido;
-  const mailInvalid = touched.mail && errors.mail;
   const today = new Date().toISOString().split("T")[0];
-  // ----------------------------
-  // RENDER
-  // ----------------------------
+
   return (
-  <div className="container py-5">
-    <div className="row justify-content-center">
-      <div className="col-12 col-md-10 col-lg-8 col-xl-7">
+    <div className="d-flex flex-column align-items-center gap-3" style={{ width: "100%", maxWidth: "520px" }}>
+      <div className="text-center w-100">
+        <button
+          className="btn btn-primary btn-lg px-4"
+          onClick={() => setShowForm(!showForm)}
+        >
+          {showForm ? "Cerrar formulario" : isEdit ? "Editar Paciente" : "Registrar Paciente"}
+        </button>
+        {isEdit && (
+          <div className="text-muted small mt-1">Editando: {editingPaciente?.nombre} {editingPaciente?.apellido}</div>
+        )}
+      </div>
 
-        {/* BOTÓN PARA MOSTRAR/OCULTAR FORM */}
-        <div className="text-center mb-4">
-          <button
-            className="btn btn-primary btn-lg px-4 py-2 rounded-3 shadow-sm"
-            onClick={() => setShowForm(!showForm)}
-          >
-            {showForm ? "Cerrar formulario" : "Registrar Paciente"}
-          </button>
-        </div>
-
-        {/* FORMULARIO CON ANIMACIÓN */}
-        <div className={`slide-down ${showForm ? "show" : ""}`}>
-          <div className="card border-0 shadow-lg rounded-4 mb-4">
-            <div className="card-header bg-white border-0 text-center pt-4 pb-2">
-              <h1 className="h4 mb-1 fw-bold">Registrar paciente</h1>
-              <p className="text-muted small mb-0">
-                Completá los datos y presioná <strong>"Guardar paciente"</strong>.
-              </p>
+      <div className={`slide-left w-100 ${showForm ? "show" : ""}`}>
+        <div className="card shadow border-0 rounded-4 p-4" style={{ width: "100%" }}>
+          {/* ALERTAS */}
+          {alert && (
+            <div className={`alert ${alert.ok ? "alert-success" : "alert-danger"} rounded-3`}>
+              {alert.text}
             </div>
+          )}
 
-            <div className="card-body px-4 pb-4">
-              {alert && (
-                <div
-                  className={`alert ${
-                    alert.ok ? "alert-success" : "alert-danger"
-                  } alert-dismissible fade show`}
-                >
-                  {alert.text}
-                  <button
-                    className="btn-close"
-                    onClick={() => setAlert(null)}
+          <form onSubmit={handleSubmit}>
+            <div className="row g-3">
+
+              {/* DNI */}
+              <div className="col-12">
+                <div className="form-floating">
+                  <input
+                    className="form-control"
+                    name="dni"
+                    value={form.dni}
+                    onChange={(e) => {
+                      const nums = e.target.value.replace(/\D+/g, "");
+                      handleChange({ target: { name: "dni", value: nums } });
+                    }}
+                    onBlur={() => markTouched("dni")}
                   />
+                  <label>DNI *</label>
                 </div>
-              )}
+                {touched.dni && errors.dni && (
+                  <div className="text-danger small mt-1">{errors.dni}</div>
+                )}
+              </div>
 
-              {/* FORMULARIO (solo 1 form, no anidar) */}
-              <form onSubmit={handleSubmit} noValidate>
-                <div className="row g-3">
-
-                  {/* DNI */}
-                  <div className="col-12">
-                    <div className="form-floating">
-                      <input
-                        id="dni"
-                        name="dni"
-                        type="text"
-                        className={`form-control rounded-3 ${
-                          dniInvalid
-                            ? "is-invalid"
-                            : touched.dni && !errors.dni
-                            ? "is-valid"
-                            : ""
-                        }`}
-                        placeholder="12345678"
-                        inputMode="numeric"
-                        value={form.dni}
-                        onChange={(e) => {
-                          const onlyNums = e.target.value.replace(/\D+/g, "");
-                          handleChange({ target: { name: "dni", value: onlyNums } });
-                        }}
-                      />
-                      <label htmlFor="dni">DNI *</label>
-                      {dniInvalid && (
-                        <div className="invalid-feedback">{errors.dni}</div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* NOMBRE */}
-                  <div className="col-md-6">
-                    <div className="form-floating">
-                      <input
-                        id="nombre"
-                        name="nombre"
-                        className={`form-control rounded-3 ${
-                          nombreInvalid
-                            ? "is-invalid"
-                            : touched.nombre && !errors.nombre
-                            ? "is-valid"
-                            : ""
-                        }`}
-                        placeholder="Nombre"
-                        value={form.nombre}
-                        onChange={(e) => {
-                          const onlyLetters =
-                            e.target.value.replace(/[^a-zA-Z\sáéíóúÁÉÍÓÚñÑ]+/g, "");
-                          handleChange({
-                            target: { name: "nombre", value: onlyLetters },
-                          });
-                        }}
-                      />
-                      <label htmlFor="nombre">Nombre</label>
-                      {nombreInvalid && (
-                        <div className="invalid-feedback">{errors.nombre}</div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* APELLIDO */}
-                  <div className="col-md-6">
-                    <div className="form-floating">
-                      <input
-                        id="apellido"
-                        name="apellido"
-                        className={`form-control rounded-3 ${
-                          apellidoInvalid
-                            ? "is-invalid"
-                            : touched.apellido && !errors.apellido
-                            ? "is-valid"
-                            : ""
-                        }`}
-                        placeholder="Apellido"
-                        value={form.apellido}
-                        onChange={(e) => {
-                          const onlyLetters =
-                            e.target.value.replace(/[^a-zA-Z\sáéíóúÁÉÍÓÚñÑ]+/g, "");
-                          handleChange({
-                            target: { name: "apellido", value: onlyLetters },
-                          });
-                        }}
-                      />
-                      <label htmlFor="apellido">Apellido</label>
-                      {apellidoInvalid && (
-                        <div className="invalid-feedback">{errors.apellido}</div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* EMAIL */}
-                  <div className="col-12">
-                    <div className="form-floating">
-                      <input
-                        id="mail"
-                        type="email"
-                        name="mail"
-                        className={`form-control rounded-3 ${
-                          mailInvalid
-                            ? "is-invalid"
-                            : touched.mail && !errors.mail
-                            ? "is-valid"
-                            : ""
-                        }`}
-                        placeholder="correo@ejemplo.com"
-                        value={form.mail}
-                        onChange={handleChange}
-                      />
-                      <label htmlFor="mail">Correo electrónico</label>
-                      {mailInvalid && (
-                        <div className="invalid-feedback">{errors.mail}</div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* TELEFONO */}
-                  <div className="col-md-6">
-                    <div className="form-floating">
-                      <input
-                        id="telefono"
-                        name="telefono"
-                        type="text"
-                        className="form-control rounded-3"
-                        placeholder="3515288730"
-                        value={form.telefono}
-                        onChange={(e) => {
-                          const onlyNums = e.target.value.replace(/\D+/g, "");
-                          handleChange({
-                            target: { name: "telefono", value: onlyNums },
-                          });
-                        }}
-                      />
-                      <label htmlFor="telefono">Teléfono</label>
-                    </div>
-                  </div>
-
-                  {/* FECHA */}
-                  <div className="col-md-6">
-                    <div className="form-floating">
-                      <input
-                        id="fecha_nacimiento"
-                        type="date"
-                        name="fecha_nacimiento"
-                        className="form-control rounded-3"
-                        value={form.fecha_nacimiento}
-                        max={today}
-                        onChange={(e) => {
-                          const v = e.target.value;
-                          if (v && v > today) return;
-                          handleChange(e);
-                        }}
-                      />
-                      <label htmlFor="fecha_nacimiento">
-                        Fecha de nacimiento
-                      </label>
-                    </div>
-                  </div>
-
-                  {/* BOTONES */}
-                  <div className="col-12 d-flex flex-column flex-sm-row gap-2 mt-3">
-                    <button
-                      type="submit"
-                      className="btn btn-primary btn-lg rounded-3 flex-grow-1"
-                      disabled={!isFormValid}
-                    >
-                      {submitting ? "Guardando..." : "Guardar paciente"}
-                    </button>
-
-                    <button
-                      type="button"
-                      className="btn btn-outline-secondary btn-lg rounded-3"
-                      disabled={submitting}
-                      onClick={() => {
-                        setForm(EMPTY_FORM);
-                        setTouched({});
-                        setErrors({});
-                        setAlert(null);
-                      }}
-                    >
-                      Limpiar
-                    </button>
-                  </div>
-
+              {/* NOMBRE */}
+              <div className="col-md-6">
+                <div className="form-floating">
+                  <input
+                    className="form-control"
+                    name="nombre"
+                    value={form.nombre}
+                    onChange={handleChange}
+                    onBlur={() => markTouched("nombre")}
+                  />
+                  <label>Nombre *</label>
                 </div>
-              </form>
+                {touched.nombre && errors.nombre && (
+                  <div className="text-danger small mt-1">{errors.nombre}</div>
+                )}
+              </div>
+
+              {/* APELLIDO */}
+              <div className="col-md-6">
+                <div className="form-floating">
+                  <input
+                    className="form-control"
+                    name="apellido"
+                    value={form.apellido}
+                    onChange={handleChange}
+                    onBlur={() => markTouched("apellido")}
+                  />
+                  <label>Apellido *</label>
+                </div>
+                {touched.apellido && errors.apellido && (
+                  <div className="text-danger small mt-1">{errors.apellido}</div>
+                )}
+              </div>
+
+              {/* EMAIL */}
+              <div className="col-12">
+                <div className="form-floating">
+                  <input
+                    type="email"
+                    name="mail"
+                    className="form-control"
+                    value={form.mail}
+                    onChange={handleChange}
+                  />
+                  <label>Email</label>
+                </div>
+                {errors.mail && (
+                  <div className="text-danger small mt-1">{errors.mail}</div>
+                )}
+              </div>
+
+              {/* TELEFONO */}
+              <div className="col-md-6">
+                <div className="form-floating">
+                  <input
+                    name="telefono"
+                    className="form-control"
+                    value={form.telefono}
+                    onChange={handleChange}
+                  />
+                  <label>Teléfono</label>
+                </div>
+              </div>
+
+              {/* FECHA */}
+              <div className="col-md-6">
+                <div className="form-floating">
+                  <input
+                    type="date"
+                    name="fecha_nacimiento"
+                    className="form-control"
+                    value={form.fecha_nacimiento}
+                    max={today}
+                    onChange={handleChange}
+                  />
+                  <label>Fecha nacimiento</label>
+                </div>
+              </div>
+
+              {/* BOTONES */}
+              <div className="col-12 d-flex gap-2 mt-3">
+                <button className="btn btn-primary flex-grow-1" disabled={!isFormValid || submitting}>
+                  {submitting ? "Guardando..." : isEdit ? "Actualizar paciente" : "Guardar paciente"}
+                </button>
+
+                <button
+                  type="button"
+                  className="btn btn-outline-secondary"
+                  onClick={() => {
+                    setForm(EMPTY_FORM);
+                    setTouched({});
+                    setErrors({});
+                    onCancelEdit && onCancelEdit();
+                  }}
+                >
+                  {isEdit ? "Cancelar edición" : "Limpiar"}
+                </button>
+              </div>
+
             </div>
-          </div>
+          </form>
         </div>
-
-        {/* TABLA (siempre visible) */}
-        <PacienteTable reloadKey={reloadKey} />
-
       </div>
     </div>
-  </div>
-);
+  );
 }

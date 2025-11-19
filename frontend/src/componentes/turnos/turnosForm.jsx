@@ -1,247 +1,197 @@
 import { useEffect, useState } from "react";
-import TurnosTable from "./turnosTabla.jsx";
+import { API_BASE } from "../../api.js";
 
-export default function TurnoForm() {
-  // -------- FORM REGISTRO --------
-
+export default function TurnosForm({ onSuccess, editingTurno, onCancelEdit }) {
   const EMPTY_FORM = {
     paciente_id: "",
     medico_id: "",
     fecha: "",
-    duracion_min: "30",
     horario: "",
+    duracion_min: "30",
     estado_turno_id: "",
     motivo: "",
-    observaciones: "",
+    observaciones: ""
   };
 
+  const isEdit = Boolean(editingTurno?.id);
+
   const [form, setForm] = useState(EMPTY_FORM);
+  const [touched, setTouched] = useState({});
+  const [errors, setErrors] = useState({});
+  const [alert, setAlert] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [showForm, setShowForm] = useState(false);
+
   const [pacientes, setPacientes] = useState([]);
   const [medicos, setMedicos] = useState([]);
   const [estados, setEstados] = useState([]);
   const [horarios, setHorarios] = useState([]);
-  const [alert, setAlert] = useState(null);
-  const [showForm, setShowForm] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
 
-  // -------- FORM EDICIÓN --------
-  const [editingTurno, setEditingTurno] = useState(null);
-  const [showEditForm, setShowEditForm] = useState(false);
-  const [editingClosing, setEditingClosing] = useState(false);
-  const [editEstado, setEditEstado] = useState("");
-  const [editHorario, setEditHorario] = useState("");
-  const [editHorariosDisponibles, setEditHorariosDisponibles] = useState([]);
-
-  // -------- FLAG REFRESH TABLA --------
-  const [refreshFlag, setRefreshFlag] = useState(0);
-
-  // -------- CARGAR LISTAS --------
+  // ---------------- VALIDACIONES ----------------
+  const validate = () => {
+    const e = {};
+    if (!form.paciente_id) e.paciente_id = "Elegí paciente";
+    if (!form.medico_id) e.medico_id = "Elegí médico";
+    if (!form.fecha) e.fecha = "La fecha es obligatoria";
+    if (!form.horario) e.horario = "Elegí horario";
+    if (!form.estado_turno_id) e.estado_turno_id = "Elegí estado";
+    return e;
+  };
 
   useEffect(() => {
-    fetch("http://localhost:8000/api/pacientes").then(r => r.json()).then(setPacientes);
-    fetch("http://localhost:8000/api/medicos").then(r => r.json()).then(setMedicos);
-    fetch("http://localhost:8000/api/estados").then(r => r.json()).then(setEstados);
+    setErrors(validate());
+  }, [form]);
+
+  // ---------------- CARGO LISTAS ----------------
+  useEffect(() => {
+    fetch(`${API_BASE}/api/pacientes`).then(r => r.json()).then(setPacientes);
+    fetch(`${API_BASE}/api/medicos`).then(r => r.json()).then(setMedicos);
+    fetch(`${API_BASE}/api/estados`).then(r => r.json()).then(setEstados);
   }, []);
 
-  // -------- GENERAR HORARIOS --------
-
+  // ---------------- HORARIOS ----------------
   const generarHorarios = (duracion) => {
-    const lista = [];
-    const start = 10 * 60;
-    const end = 20 * 60;
-
+    const arr = [];
+    const inicio = 10 * 60;
+    const fin = 20 * 60;
     duracion = Number(duracion);
-    if (!duracion || duracion <= 0) return [];
 
-    for (let min = start; min <= end; min += duracion) {
-      const h = String(Math.floor(min / 60)).padStart(2, "0");
-      const m = String(min % 60).padStart(2, "0");
-      lista.push(`${h}:${m}`);
+    for (let m = inicio; m <= fin; m += duracion) {
+      const h = String(Math.floor(m / 60)).padStart(2, "0");
+      const min = String(m % 60).padStart(2, "0");
+      arr.push(`${h}:${min}`);
     }
-    return lista;
+    return arr;
   };
 
   useEffect(() => {
     if (form.fecha && form.duracion_min) {
       setHorarios(generarHorarios(form.duracion_min));
-      setForm({ ...form, horario: "" });
     }
   }, [form.fecha, form.duracion_min]);
 
-  // -------- FORMATEAR FECHA --------
+  // ---------------- EDICIÓN ----------------
+  useEffect(() => {
+    if (editingTurno) {
+      setForm({
+        paciente_id: editingTurno.paciente_id,
+        medico_id: editingTurno.medico_id,
+        fecha: editingTurno.inicio.split("T")[0],
+        horario: editingTurno.inicio.split("T")[1].slice(0,5),
+        duracion_min: editingTurno.duracion,
+        estado_turno_id: editingTurno.estado_id,
+        motivo: editingTurno.motivo,
+        observaciones: editingTurno.observaciones
+      });
+      setShowForm(true);
+      setTouched({});
+      setErrors({});
+    } else {
+      setForm(EMPTY_FORM);
+    }
+  }, [editingTurno]);
 
-  const formatoFechaHumano = (iso) => {
-    if (!iso) return "";
-    return new Date(iso).toLocaleDateString("es-AR", {
-      weekday: "short",
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-    });
+  const markTouched = (f) => {
+    setTouched(prev => ({ ...prev, [f]: true }));
   };
 
-  // -------- HANDLERS REGISTRO --------
+  const isValid = Object.keys(errors).length === 0;
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
+    setAlert(null);
   };
 
-  // -------- SUBMIT REGISTRO --------
-
+  // ---------------- SUBMIT ----------------
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!isValid) return;
+
     setSubmitting(true);
-    setAlert(null);
 
-    if (!form.horario) {
-      setAlert({ ok: false, text: "Debes seleccionar un horario" });
-      setSubmitting(false);
-      return;
-    }
-
-    const fechaCompleta = `${form.fecha}T${form.horario}`;
-
-    const body = {
+    const payload = {
       paciente_id: Number(form.paciente_id),
       medico_id: Number(form.medico_id),
-      fecha_hora: fechaCompleta,
+      fecha_hora: `${form.fecha}T${form.horario}`,
       duracion_min: Number(form.duracion_min),
       estado_turno_id: Number(form.estado_turno_id),
       motivo: form.motivo,
-      observaciones: form.observaciones,
+      observaciones: form.observaciones
     };
 
+    const endpoint = isEdit
+      ? `${API_BASE}/api/turnos/${editingTurno.id}`
+      : `${API_BASE}/api/turnos`;
+
+    const method = isEdit ? "PUT" : "POST";
+
     try {
-      const res = await fetch("http://localhost:8000/api/turnos", {
-        method: "POST",
+      const res = await fetch(endpoint, {
+        method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
+        body: JSON.stringify(payload)
       });
 
-      if (!res.ok) {
+      if (res.ok) {
+        setAlert({ ok: true, text: isEdit ? "Turno actualizado" : "Turno registrado" });
+        if (onSuccess) onSuccess();
+        if (onCancelEdit) onCancelEdit();
+        setForm(EMPTY_FORM);
+      } else {
         const data = await res.json();
-        throw new Error(data.detail);
+        setAlert({ ok: false, text: data.detail || "Error inesperado" });
       }
 
-      setAlert({ ok: true, text: "Turno registrado con éxito" });
-      setForm(EMPTY_FORM);
-
-      // 🔄 actualizar tabla
-      setRefreshFlag(prev => prev + 1);
-    } catch (err) {
-      setAlert({ ok: false, text: err.message });
+    } catch {
+      setAlert({ ok: false, text: "Error de conexión" });
     }
 
     setSubmitting(false);
   };
 
-  // -------- ABRIR EDICIÓN --------
-
-  const handleEdit = (turno) => {
-    setShowForm(false); // cerrar formulario de registro
-
-    setEditingTurno(turno);
-    setEditEstado("");
-    setEditHorario("");
-
-    setEditHorariosDisponibles(generarHorarios(turno.duracion));
-
-    setShowEditForm(true);
-  };
-
-  // -------- CANCELAR ANIMADO --------
-
-  const cancelarEdicion = () => {
-    setEditingClosing(true);
-
-    setTimeout(() => {
-      setEditingClosing(false);
-      setShowEditForm(false);
-      setEditingTurno(null);
-      setEditEstado("");
-      setEditHorario("");
-    }, 450);
-  };
-
-  // -------- SUBMIT EDICIÓN --------
-
-  const submitEdicion = async () => {
-    if (!editEstado) {
-      alert("Selecciona un estado");
-      return;
-    }
-
-    const payload = {
-      estado_turno_id: Number(editEstado),
-    };
-
-    // REPROGRAMADO (id = 5)
-    if (Number(editEstado) === 5) {
-      if (!editHorario) {
-        alert("Selecciona un horario nuevo");
-        return;
-      }
-      const fechaOrg = editingTurno.inicio.split("T")[0];
-      payload.fecha_hora = `${fechaOrg}T${editHorario}`;
-    }
-
-    await fetch(`http://localhost:8000/api/turnos/${editingTurno.id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-
-    // 🔄 refrescar tabla
-    setRefreshFlag(prev => prev + 1);
-
-    cancelarEdicion();
-  };
-
-  // -------- RENDER --------
-
+  // ---------------- RENDER ----------------
   return (
-    <div className="d-flex justify-content-center align-items-start gap-5 mt-4">
+    <div className="d-flex flex-column align-items-center w-100" style={{ maxWidth: "520px" }}>
+      {/* BOTÓN */}
+      <div className="text-center w-100">
+        <button
+          className="btn btn-primary btn-lg px-4"
+          onClick={() => setShowForm(!showForm)}
+        >
+          {showForm ? "Cerrar formulario" : isEdit ? "Editar Turno" : "Registrar Turno"}
+        </button>
 
-      {/* -------- FORM REGISTRO -------- */}
-      <div className="text-center">
-
-        {/* ocultar el botón si estamos editando */}
-        {!showEditForm && (
-          <button
-            className="btn btn-primary btn-lg px-4"
-            onClick={() => {
-              setShowForm(!showForm);
-              setShowEditForm(false); // cerrar edicion si está abierta
-            }}
-          >
-            {showForm ? "Cerrar formulario" : "Registrar Turno"}
-          </button>
+        {isEdit && (
+          <div className="text-muted small mt-1">
+            Editando Turno #{editingTurno?.id}
+          </div>
         )}
+      </div>
 
-        <div className={`slide-left mt-4 ${showForm ? "show" : ""}`}>
-          <div className="card shadow border-0 rounded-4" style={{ width: "420px" }}>
-            <div className="card-header text-center bg-white border-0">
-              <h2 className="h5 fw-bold">Registrar Turno</h2>
-              <p className="text-muted small">Complete los datos del turno.</p>
+      {/* FORM */}
+      <div className={`slide-left w-100 ${showForm ? "show" : ""}`}>
+        <div className="card shadow border-0 rounded-4 p-4">
+
+          {alert && (
+            <div className={`alert ${alert.ok ? "alert-success" : "alert-danger"}`}>
+              {alert.text}
             </div>
+          )}
 
-            <div className="card-body">
+          <form onSubmit={handleSubmit}>
+            <div className="row g-3">
 
-              {alert && (
-                <div className={`alert ${alert.ok ? "alert-success" : "alert-danger"}`}>
-                  {alert.text}
-                </div>
-              )}
-
-              <form onSubmit={handleSubmit} className="d-flex flex-column gap-3">
-
-                {/* PACIENTE */}
+              {/* PACIENTE */}
+              <div className="col-md-6">
                 <div className="form-floating">
                   <select
-                    className="form-select"
+                    className={`form-select ${
+                      touched.paciente_id && errors.paciente_id ? "is-invalid" : ""
+                    }`}
                     name="paciente_id"
                     value={form.paciente_id}
                     onChange={handleChange}
+                    onBlur={() => markTouched("paciente_id")}
                   >
                     <option value="">Seleccionar...</option>
                     {pacientes.map(p => (
@@ -251,15 +201,21 @@ export default function TurnoForm() {
                     ))}
                   </select>
                   <label>Paciente</label>
+                  <div className="invalid-feedback">{errors.paciente_id}</div>
                 </div>
+              </div>
 
-                {/* MÉDICO */}
+              {/* MÉDICO */}
+              <div className="col-md-6">
                 <div className="form-floating">
                   <select
-                    className="form-select"
+                    className={`form-select ${
+                      touched.medico_id && errors.medico_id ? "is-invalid" : ""
+                    }`}
                     name="medico_id"
                     value={form.medico_id}
                     onChange={handleChange}
+                    onBlur={() => markTouched("medico_id")}
                   >
                     <option value="">Seleccionar...</option>
                     {medicos.map(m => (
@@ -269,86 +225,87 @@ export default function TurnoForm() {
                     ))}
                   </select>
                   <label>Médico</label>
+                  <div className="invalid-feedback">{errors.medico_id}</div>
                 </div>
+              </div>
 
-                {/* FECHA */}
+              {/* FECHA */}
+              <div className="col-md-6">
                 <div className="form-floating">
                   <input
                     type="date"
-                    className="form-control"
                     name="fecha"
+                    className={`form-control ${
+                      touched.fecha && errors.fecha ? "is-invalid" : ""
+                    }`}
                     value={form.fecha}
                     onChange={handleChange}
+                    onBlur={() => markTouched("fecha")}
                   />
                   <label>Fecha</label>
+                  <div className="invalid-feedback">{errors.fecha}</div>
                 </div>
+              </div>
 
-                {form.fecha && (
-                  <small className="text-muted ms-1">
-                    {formatoFechaHumano(form.fecha)}
-                  </small>
-                )}
-
-                {/* DURACIÓN */}
-                <div className="form-floating">
-                  <input
-                    type="number"
-                    className="form-control"
-                    name="duracion_min"
-                    min="5"
-                    step="5"
-                    value={form.duracion_min}
-                    onChange={handleChange}
-                  />
-                  <label>Duración (min)</label>
-                </div>
-
-                {/* HORARIO */}
+              {/* HORARIO */}
+              <div className="col-md-6">
                 <div className="form-floating">
                   <select
-                    className="form-select"
+                    className={`form-select ${
+                      touched.horario && errors.horario ? "is-invalid" : ""
+                    }`}
                     name="horario"
                     value={form.horario}
                     onChange={handleChange}
-                    disabled={!form.fecha}
+                    onBlur={() => markTouched("horario")}
                   >
-                    <option value="">Seleccionar horario...</option>
+                    <option value="">Seleccionar...</option>
                     {horarios.map(h => (
                       <option key={h} value={h}>{h}</option>
                     ))}
                   </select>
-                  <label>Horario disponible</label>
+                  <label>Horario</label>
+                  <div className="invalid-feedback">{errors.horario}</div>
                 </div>
+              </div>
 
-                {/* ESTADO */}
+              {/* ESTADO */}
+              <div className="col-md-6">
                 <div className="form-floating">
                   <select
-                    className="form-select"
+                    className={`form-select ${
+                      touched.estado_turno_id && errors.estado_turno_id ? "is-invalid" : ""
+                    }`}
                     name="estado_turno_id"
                     value={form.estado_turno_id}
                     onChange={handleChange}
+                    onBlur={() => markTouched("estado_turno_id")}
                   >
                     <option value="">Seleccionar...</option>
                     {estados.map(e => (
                       <option key={e.id} value={e.id}>{e.nombre}</option>
                     ))}
                   </select>
-                  <label>Estado del turno</label>
+                  <label>Estado</label>
+                  <div className="invalid-feedback">{errors.estado_turno_id}</div>
                 </div>
+              </div>
 
-                {/* MOTIVO */}
+              {/* MOTIVO */}
+              <div className="col-md-6">
                 <div className="form-floating">
                   <input
                     className="form-control"
                     name="motivo"
                     value={form.motivo}
                     onChange={handleChange}
-                    placeholder="Motivo"
                   />
                   <label>Motivo</label>
                 </div>
+              </div>
 
-                {/* OBSERVACIONES */}
+              {/* OBSERVACIONES */}
+              <div className="col-12">
                 <div className="form-floating">
                   <textarea
                     className="form-control"
@@ -356,84 +313,35 @@ export default function TurnoForm() {
                     style={{ height: "80px" }}
                     value={form.observaciones}
                     onChange={handleChange}
-                  ></textarea>
+                  />
                   <label>Observaciones</label>
                 </div>
+              </div>
 
-                <button className="btn btn-primary w-100" disabled={submitting}>
-                  {submitting ? "Guardando..." : "Guardar Turno"}
+              {/* BOTONES */}
+              <div className="col-12 d-flex gap-2 mt-3">
+                <button className="btn btn-primary flex-grow-1" disabled={submitting || !isValid}>
+                  {submitting ? "Guardando..." : isEdit ? "Actualizar Turno" : "Guardar Turno"}
                 </button>
 
-              </form>
+                <button
+                  type="button"
+                  className="btn btn-outline-secondary"
+                  onClick={() => {
+                    setForm(EMPTY_FORM);
+                    setTouched({});
+                    setErrors({});
+                    if (onCancelEdit) onCancelEdit();
+                  }}
+                >
+                  {isEdit ? "Cancelar edición" : "Limpiar"}
+                </button>
+              </div>
+
             </div>
-          </div>
+          </form>
         </div>
       </div>
-
-      {/* -------- FORM EDICIÓN -------- */}
-      <div className={`slide-left mt-4 ${showEditForm ? "show" : ""} ${editingClosing ? "closing" : ""}`}>
-        {showEditForm && (
-          <div className="card shadow border-0 rounded-4" style={{ width: "420px" }}>
-            <div className="card-header text-center bg-white border-0">
-              <h2 className="h5 fw-bold">Editar Turno</h2>
-              {editingTurno && (
-                <p className="text-muted small mb-0">
-                  Turno #{editingTurno.id} – {editingTurno.paciente_nombre} {editingTurno.paciente_apellido}
-                </p>
-              )}
-            </div>
-
-            <div className="card-body d-flex flex-column gap-3">
-
-              {/* ESTADO */}
-              <div className="form-floating">
-                <select
-                  className="form-select"
-                  value={editEstado}
-                  onChange={(e) => setEditEstado(e.target.value)}
-                >
-                  <option value="">Seleccionar...</option>
-                  {estados.map(e => (
-                    <option key={e.id} value={e.id}>{e.nombre}</option>
-                  ))}
-                </select>
-                <label>Nuevo Estado</label>
-              </div>
-
-              {/* REPROGRAMADO (id 5) */}
-              {Number(editEstado) === 5 && (
-                <div className="form-floating">
-                  <select
-                    className="form-select"
-                    value={editHorario}
-                    onChange={(e) => setEditHorario(e.target.value)}
-                  >
-                    <option value="">Seleccionar...</option>
-                    {editHorariosDisponibles.map(h => (
-                      <option key={h} value={h}>{h}</option>
-                    ))}
-                  </select>
-                  <label>Nuevo horario</label>
-                </div>
-              )}
-
-              <div className="d-flex gap-2 mt-2">
-                <button className="btn btn-secondary w-50" onClick={cancelarEdicion}>
-                  Cancelar
-                </button>
-                <button className="btn btn-primary w-50" onClick={submitEdicion}>
-                  Guardar
-                </button>
-              </div>
-
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* -------- TABLA -------- */}
-      <TurnosTable onEdit={handleEdit} refresh={refreshFlag} />
-
     </div>
   );
 }

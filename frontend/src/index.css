@@ -1,3 +1,9 @@
+@import "bootstrap/dist/css/bootstrap.min.css";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+
 :root {
   font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
@@ -13,11 +19,6 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
-a {
-  font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
-}
 a:hover {
   color: #535bf2;
 }
@@ -103,30 +104,34 @@ button:focus-visible {
    FORM ANIMACIÓN DESKTOP
    ============================= */
 
+/* =============================
+   FORM ANIMACIÓN DESKTOP
+   ============================= */
+
 .slide-left {
   max-width: 0;
   overflow: hidden;
   opacity: 0;
-  transform: translateX(-50px);
+  transform: translateX(50px);
   transition:
     max-width 0.45s ease,
     opacity 0.35s ease,
     transform 0.45s ease;
 }
 
-/* Abierto */
 .slide-left.show {
   max-width: 420px;
   opacity: 1;
   transform: translateX(0);
 }
 
-/* Cerrando */
 .slide-left.closing {
   max-width: 0;
   opacity: 0;
-  transform: translateX(-50px);
+  transform: translateX(50px);
 }
+
+
 
 /* =============================
    MOBILE: FORM ANIMA DESDE ABAJO
@@ -199,4 +204,28 @@ button:focus-visible {
   max-width: 420px;
   border-radius: 12px;
   box-shadow: 0 8px 18px rgba(0,0,0,0.2);
+}
+/* === LAYOUT === */
+.turnos-layout {
+  display: flex;
+  gap: 40px;
+  align-items: flex-start;
+}
+
+.forms-column {
+  width: 420px;
+  min-width: 420px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* tarjeta interna */
+.form-card {
+  width: 420px;
+}
+
+/* columna derecha */
+.table-column {
+  flex: 1;
 }
