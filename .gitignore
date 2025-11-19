@@ -12,7 +12,6 @@ backend/.venv/
 backend/__pycache__/
 backend/*.pyc
 backend/.pytest_cache/
-backend/.env
 
 # Logs & caches
 *.log
