@@ -36,7 +36,7 @@ export default function EspecialidadesTabla({ reloadKey }) {
 
   return (
     <div
-      className="card shadow-lg border-0 rounded-4 mt-4 mx-auto"
+      className="card shadow-lg border-0 rounded-4 mt-4 w-100"
       style={{ maxWidth: "700px" }}
     >
       <div className="card-header bg-white border-0 d-flex justify-content-between">
@@ -72,19 +72,19 @@ export default function EspecialidadesTabla({ reloadKey }) {
 
         {!loading && !err && lista.length > 0 && (
           <div className="table-responsive">
-            <table className="table table-hover table-striped text-center mb-0">
+            <table className="table table-hover table-striped text-center align-middle mb-0">
               <thead className="table-light">
                 <tr>
                   <th>Nombre</th>
-                  <th>Acciones</th>
+                  <th style={{ width: "18%" }}>Acciones</th>
                 </tr>
               </thead>
 
               <tbody>
                 {lista.map((e) => (
                   <tr key={e.id}>
-                    <td>{e.nombre}</td>
-                    <td>
+                    <td className="fw-semibold">{e.nombre}</td>
+                    <td className="d-flex justify-content-center">
                       <button
                         className="btn btn-danger btn-sm rounded-3"
                         onClick={() => eliminar(e.id)}

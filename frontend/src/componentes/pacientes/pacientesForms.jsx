@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { API_BASE } from "../../api.js";
 
 const EMPTY_FORM = {
@@ -10,13 +10,38 @@ const EMPTY_FORM = {
   fecha_nacimiento: "",
 };
 
-export default function PacienteForm({ onSuccess }) {
+export default function PacienteForm({ onSuccess, editingPaciente, onCancelEdit }) {
   const [form, setForm] = useState(EMPTY_FORM);
   const [touched, setTouched] = useState({});
   const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
   const [alert, setAlert] = useState(null);
   const [showForm, setShowForm] = useState(false);
+
+  const isEdit = Boolean(editingPaciente?.id);
+
+  useEffect(() => {
+    if (editingPaciente) {
+      setForm({
+        dni: String(editingPaciente.dni ?? ""),
+        nombre: editingPaciente.nombre ?? "",
+        apellido: editingPaciente.apellido ?? "",
+        mail: editingPaciente.mail ?? "",
+        telefono: editingPaciente.telefono ?? "",
+        fecha_nacimiento: editingPaciente.fecha_nacimiento
+          ? editingPaciente.fecha_nacimiento.slice(0, 10)
+          : "",
+      });
+      setTouched({});
+      setErrors({});
+      setShowForm(true);
+      setAlert(null);
+    } else {
+      setForm(EMPTY_FORM);
+      setTouched({});
+      setErrors({});
+    }
+  }, [editingPaciente]);
 
   // ----------------------------
   // VALIDACIONES
@@ -73,8 +98,13 @@ export default function PacienteForm({ onSuccess }) {
     setAlert(null);
 
     try {
-      const res = await fetch(`${API_BASE}/api/pacientes`, {
-        method: "POST",
+      const endpoint = isEdit
+        ? `${API_BASE}/api/pacientes/${editingPaciente.id}`
+        : `${API_BASE}/api/pacientes`;
+      const method = isEdit ? "PUT" : "POST";
+
+      const res = await fetch(endpoint, {
+        method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...form,
@@ -94,14 +124,15 @@ export default function PacienteForm({ onSuccess }) {
 
       setAlert({
         ok: true,
-        text: "Paciente creado correctamente.",
+        text: isEdit ? "Paciente actualizado correctamente." : "Paciente creado correctamente.",
       });
 
       setForm(EMPTY_FORM);
       setTouched({});
       setErrors({});
 
-      if (onSuccess) onSuccess(); // <--- NOTIFICAR A PAGE
+      if (onSuccess) onSuccess();
+      if (onCancelEdit) onCancelEdit();
     } catch (err) {
       setAlert({
         ok: false,
@@ -115,18 +146,21 @@ export default function PacienteForm({ onSuccess }) {
   const today = new Date().toISOString().split("T")[0];
 
   return (
-    <div className="container py-4">
-      <div className="text-center mb-4">
+    <div className="d-flex flex-column align-items-center gap-3" style={{ width: "100%", maxWidth: "520px" }}>
+      <div className="text-center w-100">
         <button
-          className="btn btn-primary btn-lg px-4 py-2 rounded-3"
+          className="btn btn-primary btn-lg px-4"
           onClick={() => setShowForm(!showForm)}
         >
-          {showForm ? "Cerrar formulario" : "Registrar Paciente"}
+          {showForm ? "Cerrar formulario" : isEdit ? "Editar Paciente" : "Registrar Paciente"}
         </button>
+        {isEdit && (
+          <div className="text-muted small mt-1">Editando: {editingPaciente?.nombre} {editingPaciente?.apellido}</div>
+        )}
       </div>
 
-      {showForm && (
-        <div className="card shadow-lg border-0 rounded-4 p-4 mx-auto" style={{ maxWidth: "700px" }}>
+      <div className={`slide-left w-100 ${showForm ? "show" : ""}`}>
+        <div className="card shadow border-0 rounded-4 p-4" style={{ width: "100%" }}>
           {/* ALERTAS */}
           {alert && (
             <div className={`alert ${alert.ok ? "alert-success" : "alert-danger"} rounded-3`}>
@@ -148,9 +182,13 @@ export default function PacienteForm({ onSuccess }) {
                       const nums = e.target.value.replace(/\D+/g, "");
                       handleChange({ target: { name: "dni", value: nums } });
                     }}
+                    onBlur={() => markTouched("dni")}
                   />
                   <label>DNI *</label>
                 </div>
+                {touched.dni && errors.dni && (
+                  <div className="text-danger small mt-1">{errors.dni}</div>
+                )}
               </div>
 
               {/* NOMBRE */}
@@ -161,9 +199,13 @@ export default function PacienteForm({ onSuccess }) {
                     name="nombre"
                     value={form.nombre}
                     onChange={handleChange}
+                    onBlur={() => markTouched("nombre")}
                   />
                   <label>Nombre *</label>
                 </div>
+                {touched.nombre && errors.nombre && (
+                  <div className="text-danger small mt-1">{errors.nombre}</div>
+                )}
               </div>
 
               {/* APELLIDO */}
@@ -174,9 +216,13 @@ export default function PacienteForm({ onSuccess }) {
                     name="apellido"
                     value={form.apellido}
                     onChange={handleChange}
+                    onBlur={() => markTouched("apellido")}
                   />
                   <label>Apellido *</label>
                 </div>
+                {touched.apellido && errors.apellido && (
+                  <div className="text-danger small mt-1">{errors.apellido}</div>
+                )}
               </div>
 
               {/* EMAIL */}
@@ -191,6 +237,9 @@ export default function PacienteForm({ onSuccess }) {
                   />
                   <label>Email</label>
                 </div>
+                {errors.mail && (
+                  <div className="text-danger small mt-1">{errors.mail}</div>
+                )}
               </div>
 
               {/* TELEFONO */}
@@ -223,23 +272,28 @@ export default function PacienteForm({ onSuccess }) {
 
               {/* BOTONES */}
               <div className="col-12 d-flex gap-2 mt-3">
-                <button className="btn btn-primary flex-grow-1" disabled={!isFormValid}>
-                  Guardar paciente
+                <button className="btn btn-primary flex-grow-1" disabled={!isFormValid || submitting}>
+                  {submitting ? "Guardando..." : isEdit ? "Actualizar paciente" : "Guardar paciente"}
                 </button>
 
                 <button
                   type="button"
                   className="btn btn-outline-secondary"
-                  onClick={() => setForm(EMPTY_FORM)}
+                  onClick={() => {
+                    setForm(EMPTY_FORM);
+                    setTouched({});
+                    setErrors({});
+                    onCancelEdit && onCancelEdit();
+                  }}
                 >
-                  Limpiar
+                  {isEdit ? "Cancelar edición" : "Limpiar"}
                 </button>
               </div>
 
             </div>
           </form>
         </div>
-      )}
+      </div>
     </div>
   );
 }
