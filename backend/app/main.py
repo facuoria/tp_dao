@@ -291,6 +291,67 @@ def borrar_paciente(especialidad_id: int):
     except mysql.connector.Error:
         raise HTTPException(status_code=500, detail="Error al borrar especialidad")
     
+# ===================== AGENDA ==========================
+
+@app.get("/api/agenda/medico/{medico_id}")
+def listar_agenda_por_medico(medico_id: int):
+    sql = """
+        SELECT 
+            id,
+            medicos_id AS medico_id,
+            dia_semana,
+            DATE_FORMAT(hora_inicio, '%H:%i') AS hora_inicio,
+            DATE_FORMAT(hora_fin, '%H:%i') AS hora_fin,
+            duracion_min
+        FROM agenda_medico
+        WHERE medicos_id = %s
+        ORDER BY dia_semana, hora_inicio
+    """
+    with get_connection() as conn, conn.cursor(dictionary=True) as cur:
+        cur.execute(sql, (medico_id,))
+        return cur.fetchall()
+
+@app.post("/api/agenda", status_code=201)
+def crear_agenda(body: dict):
+
+    medico_id = body.get("medico_id")
+    dia_semana = body.get("dia_semana")
+    hora_inicio = body.get("hora_inicio")
+    hora_fin = body.get("hora_fin")
+    duracion_min = body.get("duracion_min")
+
+    if None in (medico_id, dia_semana, hora_inicio, hora_fin, duracion_min):
+        raise HTTPException(400, "Faltan campos")
+
+    # verificar duplicado
+    sql_dup = """
+        SELECT id FROM agenda_medico
+        WHERE medicos_id=%s AND dia_semana=%s AND hora_inicio=%s
+    """
+    with get_connection() as conn, conn.cursor(dictionary=True) as cur:
+        cur.execute(sql_dup, (medico_id, dia_semana, hora_inicio))
+        if cur.fetchone():
+            raise HTTPException(409, "Ya hay una franja en ese horario")
+
+        sql = """
+            INSERT INTO agenda_medico
+            (medicos_id, dia_semana, hora_inicio, hora_fin, duracion_min)
+            VALUES (%s,%s,%s,%s,%s)
+        """
+        cur.execute(sql, (medico_id, dia_semana, hora_inicio, hora_fin, duracion_min))
+        conn.commit()
+        return {"id": cur.lastrowid}
+    
+@app.delete("/api/agenda/{agenda_id}", status_code=204)
+def borrar_agenda(agenda_id: int):
+    sql = "DELETE FROM agenda_medico WHERE id = %s"
+    with get_connection() as conn, conn.cursor() as cur:
+        cur.execute(sql, (agenda_id,))
+        if cur.rowcount == 0:
+            raise HTTPException(404, "Franja no encontrada")
+        conn.commit()
+        return
+    
 #------------ VISUALIZAR ESTADOS --------------------
 @app.get("/api/estados")
 def listar_estados():

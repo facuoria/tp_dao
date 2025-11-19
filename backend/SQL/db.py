@@ -7,11 +7,11 @@ from dotenv import load_dotenv
 load_dotenv()
 
 CFG = {
-    "host": os.getenv("MYSQL_HOST", "localhost"),
-    "port": int(os.getenv("MYSQL_PORT", "3306")),
-    "user": os.getenv("MYSQL_USER", "turnero"),
-    "password": os.getenv("MYSQL_PASSWORD", "clave_segura"),
-    "database": os.getenv("MYSQL_DB", "turnosMedicos"),
+    "host": os.getenv("DB_HOST", "localhost"),
+    "port": int(os.getenv("DB_PORT", "3306")),
+    "user": os.getenv("DB_USER", "turnero"),
+    "password": os.getenv("DB_PASSWORD", "Ju4nch12oo3*"),
+    "database": os.getenv("DB_NAME", "turnosMedicos"),
     "autocommit": False,
     "charset": "utf8",
 }
