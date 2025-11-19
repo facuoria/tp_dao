@@ -1,6 +1,5 @@
 import { useState, useMemo } from "react";
 import { API_BASE } from "../../api.js";
-// Ajustá la ruta según tu proyecto:
 import EspecialidadTable from "./especialidadesTabla.jsx";
 
 const EMPTY_FORM = {
