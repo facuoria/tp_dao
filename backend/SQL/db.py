@@ -63,21 +63,26 @@ def insertar_paciente(dni, nombre, apellido, mail, telefono, fecha_nacimiento):
             conn.close()
 
 def eliminar_paciente_por_id(paciente_id: int) -> int:  # <--- nombre alineado
-    sql = "DELETE FROM pacientes WHERE id = %s"
+    sql_turnos = "DELETE FROM turnos WHERE pacientes_id = %s"
+    sql_paciente = "DELETE FROM pacientes WHERE id = %s"
     conn = None
     cur = None
     try:
         conn = get_connection()
         cur = conn.cursor()
-        cur.execute(sql, (paciente_id,))   # tupla de 1 elemento
+        
+        # 1. Eliminar turnos asociados
+        cur.execute(sql_turnos, (paciente_id,))
+        
+        # 2. Eliminar paciente
+        cur.execute(sql_paciente, (paciente_id,))
+        
         afectados = cur.rowcount
         conn.commit()
         return afectados
-    except mysql.connector.Error as e:
+    except mysql.connector.Error:
         if conn:
             conn.rollback()
-        if e.errno == errorcode.ER_ROW_IS_REFERENCED_2:
-            raise ValueError("No se puede borrar: el paciente tiene turnos/recetas/historial asociados.") from e
         raise
     finally:
         if cur: cur.close()

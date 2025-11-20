@@ -28,19 +28,33 @@ export default function TurnosForm({ onSuccess, editingTurno, onCancelEdit }) {
   const [horarios, setHorarios] = useState([]);
 
   // ---------------- VALIDACIONES ----------------
+  // ---------------- VALIDACIONES ----------------
   const validate = () => {
     const e = {};
-    if (!form.paciente_id) e.paciente_id = "Elegí paciente";
-    if (!form.medico_id) e.medico_id = "Elegí médico";
-    if (!form.fecha) e.fecha = "La fecha es obligatoria";
-    if (!form.horario) e.horario = "Elegí horario";
+
+    // Validaciones solo para creación
+    if (!isEdit) {
+      if (!form.paciente_id) e.paciente_id = "Elegí paciente";
+      if (!form.medico_id) e.medico_id = "Elegí médico";
+    }
+
+    // Validaciones comunes
     if (!form.estado_turno_id) e.estado_turno_id = "Elegí estado";
+
+    // Validar fecha/hora solo si es nuevo O si es reprogramado
+    const isReprogramado = estados.find(est => est.id == form.estado_turno_id)?.nombre.toLowerCase() === "reprogramado";
+
+    if (!isEdit || isReprogramado) {
+      if (!form.fecha) e.fecha = "La fecha es obligatoria";
+      if (!form.horario) e.horario = "Elegí horario";
+    }
+
     return e;
   };
 
   useEffect(() => {
     setErrors(validate());
-  }, [form]);
+  }, [form, isEdit, estados]); // Agregamos dependencias
 
   // ---------------- CARGO LISTAS ----------------
   useEffect(() => {
@@ -72,24 +86,27 @@ export default function TurnosForm({ onSuccess, editingTurno, onCancelEdit }) {
 
   // ---------------- EDICIÓN ----------------
   useEffect(() => {
-    if (editingTurno) {
+    if (editingTurno && estados.length > 0) {
+      // Mapear el nombre del estado al ID
+      const estadoEncontrado = estados.find(e => e.nombre.toLowerCase() === editingTurno.estado.toLowerCase());
+
       setForm({
-        paciente_id: editingTurno.paciente_id,
-        medico_id: editingTurno.medico_id,
+        paciente_id: "", // No se edita
+        medico_id: "",   // No se edita
         fecha: editingTurno.inicio.split("T")[0],
-        horario: editingTurno.inicio.split("T")[1].slice(0,5),
+        horario: editingTurno.inicio.split("T")[1].slice(0, 5),
         duracion_min: editingTurno.duracion,
-        estado_turno_id: editingTurno.estado_id,
+        estado_turno_id: estadoEncontrado ? estadoEncontrado.id : "",
         motivo: editingTurno.motivo,
         observaciones: editingTurno.observaciones
       });
       setShowForm(true);
       setTouched({});
       setErrors({});
-    } else {
+    } else if (!editingTurno) {
       setForm(EMPTY_FORM);
     }
-  }, [editingTurno]);
+  }, [editingTurno, estados]);
 
   const markTouched = (f) => {
     setTouched(prev => ({ ...prev, [f]: true }));
@@ -109,21 +126,32 @@ export default function TurnosForm({ onSuccess, editingTurno, onCancelEdit }) {
 
     setSubmitting(true);
 
-    const payload = {
-      paciente_id: Number(form.paciente_id),
-      medico_id: Number(form.medico_id),
-      fecha_hora: `${form.fecha}T${form.horario}`,
-      duracion_min: Number(form.duracion_min),
-      estado_turno_id: Number(form.estado_turno_id),
-      motivo: form.motivo,
-      observaciones: form.observaciones
-    };
+    let payload;
+    let endpoint;
+    let method;
 
-    const endpoint = isEdit
-      ? `${API_BASE}/api/turnos/${editingTurno.id}`
-      : `${API_BASE}/api/turnos`;
-
-    const method = isEdit ? "PUT" : "POST";
+    if (isEdit) {
+      // Payload reducido para edición
+      payload = {
+        estado_turno_id: Number(form.estado_turno_id),
+        fecha_hora: (form.fecha && form.horario) ? `${form.fecha}T${form.horario}` : null
+      };
+      endpoint = `${API_BASE}/api/turnos/${editingTurno.id}`;
+      method = "PUT";
+    } else {
+      // Payload completo para creación
+      payload = {
+        paciente_id: Number(form.paciente_id),
+        medico_id: Number(form.medico_id),
+        fecha_hora: `${form.fecha}T${form.horario}`,
+        duracion_min: Number(form.duracion_min),
+        estado_turno_id: Number(form.estado_turno_id),
+        motivo: form.motivo,
+        observaciones: form.observaciones
+      };
+      endpoint = `${API_BASE}/api/turnos`;
+      method = "POST";
+    }
 
     try {
       const res = await fetch(endpoint, {
@@ -151,7 +179,7 @@ export default function TurnosForm({ onSuccess, editingTurno, onCancelEdit }) {
 
   // ---------------- RENDER ----------------
   return (
-    <div className="d-flex flex-column align-items-center w-100" style={{ maxWidth: "520px" }}>
+    <div className="d-flex flex-column align-items-center gap-3" style={{ width: "100%", maxWidth: "520px" }}>
       {/* BOTÓN */}
       <div className="text-center w-100">
         <button
@@ -170,7 +198,7 @@ export default function TurnosForm({ onSuccess, editingTurno, onCancelEdit }) {
 
       {/* FORM */}
       <div className={`slide-left w-100 ${showForm ? "show" : ""}`}>
-        <div className="card shadow border-0 rounded-4 p-4">
+        <div className="card shadow border-0 rounded-4 p-4" style={{ width: "100%" }}>
 
           {alert && (
             <div className={`alert ${alert.ok ? "alert-success" : "alert-danger"}`}>
@@ -181,101 +209,62 @@ export default function TurnosForm({ onSuccess, editingTurno, onCancelEdit }) {
           <form onSubmit={handleSubmit}>
             <div className="row g-3">
 
-              {/* PACIENTE */}
+              {/* PACIENTE - Solo visible en creación */}
+              {!isEdit && (
+                <div className="col-md-6">
+                  <div className="form-floating">
+                    <select
+                      className={`form-select ${touched.paciente_id && errors.paciente_id ? "is-invalid" : ""
+                        }`}
+                      name="paciente_id"
+                      value={form.paciente_id}
+                      onChange={handleChange}
+                      onBlur={() => markTouched("paciente_id")}
+                    >
+                      <option value="">Seleccionar...</option>
+                      {pacientes.map(p => (
+                        <option key={p.id} value={p.id}>
+                          {p.dni} - {p.nombre} {p.apellido}
+                        </option>
+                      ))}
+                    </select>
+                    <label>Paciente</label>
+                    <div className="invalid-feedback">{errors.paciente_id}</div>
+                  </div>
+                </div>
+              )}
+
+              {/* MÉDICO - Solo visible en creación */}
+              {!isEdit && (
+                <div className="col-md-6">
+                  <div className="form-floating">
+                    <select
+                      className={`form-select ${touched.medico_id && errors.medico_id ? "is-invalid" : ""
+                        }`}
+                      name="medico_id"
+                      value={form.medico_id}
+                      onChange={handleChange}
+                      onBlur={() => markTouched("medico_id")}
+                    >
+                      <option value="">Seleccionar...</option>
+                      {medicos.map(m => (
+                        <option key={m.id} value={m.id}>
+                          {m.nombre} {m.apellido} - Mat: {m.matricula}
+                        </option>
+                      ))}
+                    </select>
+                    <label>Médico</label>
+                    <div className="invalid-feedback">{errors.medico_id}</div>
+                  </div>
+                </div>
+              )}
+
+              {/* ESTADO - Siempre visible */}
               <div className="col-md-6">
                 <div className="form-floating">
                   <select
-                    className={`form-select ${
-                      touched.paciente_id && errors.paciente_id ? "is-invalid" : ""
-                    }`}
-                    name="paciente_id"
-                    value={form.paciente_id}
-                    onChange={handleChange}
-                    onBlur={() => markTouched("paciente_id")}
-                  >
-                    <option value="">Seleccionar...</option>
-                    {pacientes.map(p => (
-                      <option key={p.id} value={p.id}>
-                        {p.dni} - {p.nombre} {p.apellido}
-                      </option>
-                    ))}
-                  </select>
-                  <label>Paciente</label>
-                  <div className="invalid-feedback">{errors.paciente_id}</div>
-                </div>
-              </div>
-
-              {/* MÉDICO */}
-              <div className="col-md-6">
-                <div className="form-floating">
-                  <select
-                    className={`form-select ${
-                      touched.medico_id && errors.medico_id ? "is-invalid" : ""
-                    }`}
-                    name="medico_id"
-                    value={form.medico_id}
-                    onChange={handleChange}
-                    onBlur={() => markTouched("medico_id")}
-                  >
-                    <option value="">Seleccionar...</option>
-                    {medicos.map(m => (
-                      <option key={m.id} value={m.id}>
-                        {m.nombre} {m.apellido} - Mat: {m.matricula}
-                      </option>
-                    ))}
-                  </select>
-                  <label>Médico</label>
-                  <div className="invalid-feedback">{errors.medico_id}</div>
-                </div>
-              </div>
-
-              {/* FECHA */}
-              <div className="col-md-6">
-                <div className="form-floating">
-                  <input
-                    type="date"
-                    name="fecha"
-                    className={`form-control ${
-                      touched.fecha && errors.fecha ? "is-invalid" : ""
-                    }`}
-                    value={form.fecha}
-                    onChange={handleChange}
-                    onBlur={() => markTouched("fecha")}
-                  />
-                  <label>Fecha</label>
-                  <div className="invalid-feedback">{errors.fecha}</div>
-                </div>
-              </div>
-
-              {/* HORARIO */}
-              <div className="col-md-6">
-                <div className="form-floating">
-                  <select
-                    className={`form-select ${
-                      touched.horario && errors.horario ? "is-invalid" : ""
-                    }`}
-                    name="horario"
-                    value={form.horario}
-                    onChange={handleChange}
-                    onBlur={() => markTouched("horario")}
-                  >
-                    <option value="">Seleccionar...</option>
-                    {horarios.map(h => (
-                      <option key={h} value={h}>{h}</option>
-                    ))}
-                  </select>
-                  <label>Horario</label>
-                  <div className="invalid-feedback">{errors.horario}</div>
-                </div>
-              </div>
-
-              {/* ESTADO */}
-              <div className="col-md-6">
-                <div className="form-floating">
-                  <select
-                    className={`form-select ${
-                      touched.estado_turno_id && errors.estado_turno_id ? "is-invalid" : ""
-                    }`}
+                    className={`form-select ${touched.estado_turno_id && errors.estado_turno_id ? "is-invalid" : ""
+                      }`}
                     name="estado_turno_id"
                     value={form.estado_turno_id}
                     onChange={handleChange}
@@ -291,32 +280,78 @@ export default function TurnosForm({ onSuccess, editingTurno, onCancelEdit }) {
                 </div>
               </div>
 
-              {/* MOTIVO */}
-              <div className="col-md-6">
-                <div className="form-floating">
-                  <input
-                    className="form-control"
-                    name="motivo"
-                    value={form.motivo}
-                    onChange={handleChange}
-                  />
-                  <label>Motivo</label>
+              {/* FECHA - Visible en creación O si es reprogramado */}
+              {(!isEdit || (isEdit && estados.find(e => e.id == form.estado_turno_id)?.nombre.toLowerCase() === "reprogramado")) && (
+                <div className="col-md-6">
+                  <div className="form-floating">
+                    <input
+                      type="date"
+                      name="fecha"
+                      className={`form-control ${touched.fecha && errors.fecha ? "is-invalid" : ""
+                        }`}
+                      value={form.fecha}
+                      onChange={handleChange}
+                      onBlur={() => markTouched("fecha")}
+                    />
+                    <label>Fecha</label>
+                    <div className="invalid-feedback">{errors.fecha}</div>
+                  </div>
                 </div>
-              </div>
+              )}
 
-              {/* OBSERVACIONES */}
-              <div className="col-12">
-                <div className="form-floating">
-                  <textarea
-                    className="form-control"
-                    name="observaciones"
-                    style={{ height: "80px" }}
-                    value={form.observaciones}
-                    onChange={handleChange}
-                  />
-                  <label>Observaciones</label>
+              {/* HORARIO - Visible en creación O si es reprogramado */}
+              {(!isEdit || (isEdit && estados.find(e => e.id == form.estado_turno_id)?.nombre.toLowerCase() === "reprogramado")) && (
+                <div className="col-md-6">
+                  <div className="form-floating">
+                    <select
+                      className={`form-select ${touched.horario && errors.horario ? "is-invalid" : ""
+                        }`}
+                      name="horario"
+                      value={form.horario}
+                      onChange={handleChange}
+                      onBlur={() => markTouched("horario")}
+                    >
+                      <option value="">Seleccionar...</option>
+                      {horarios.map(h => (
+                        <option key={h} value={h}>{h}</option>
+                      ))}
+                    </select>
+                    <label>Horario</label>
+                    <div className="invalid-feedback">{errors.horario}</div>
+                  </div>
                 </div>
-              </div>
+              )}
+
+              {/* MOTIVO - Solo visible en creación */}
+              {!isEdit && (
+                <div className="col-md-6">
+                  <div className="form-floating">
+                    <input
+                      className="form-control"
+                      name="motivo"
+                      value={form.motivo}
+                      onChange={handleChange}
+                    />
+                    <label>Motivo</label>
+                  </div>
+                </div>
+              )}
+
+              {/* OBSERVACIONES - Solo visible en creación (según pedido estricto) */}
+              {!isEdit && (
+                <div className="col-12">
+                  <div className="form-floating">
+                    <textarea
+                      className="form-control"
+                      name="observaciones"
+                      style={{ height: "80px" }}
+                      value={form.observaciones}
+                      onChange={handleChange}
+                    />
+                    <label>Observaciones</label>
+                  </div>
+                </div>
+              )}
 
               {/* BOTONES */}
               <div className="col-12 d-flex gap-2 mt-3">
