@@ -441,7 +441,6 @@ def listar_turnos():
         cur.execute(sql)
         return cur.fetchall()
 
-
 #------------------INSERTAR TURNO------------------
 @app.post("/api/turnos", status_code=201)
 def crear_turno(body: dict):
@@ -574,3 +573,130 @@ def actualizar_turno(turno_id: int, body: dict):
     conn.commit()
 
     return {"detail": "Turno actualizado correctamente"}
+
+# ===================== RECETAS ==========================
+
+@app.get("/api/recetas")
+def listar_recetas(
+    turnoId: int | None = None,
+    pacienteId: int | None = None,
+    medicoId: int | None = None,
+):
+    sql = """
+        SELECT 
+            id,
+            turnos_id AS turno_id,
+            medicos_id AS medico_id,
+            pacientes_id AS paciente_id,
+            fecha_emision,
+            indicaciones
+        FROM recetas
+        WHERE 1=1
+    """
+    params = []
+
+    if turnoId is not None:
+        sql += " AND turnos_id = %s"
+        params.append(turnoId)
+
+    if pacienteId is not None:
+        sql += " AND pacientes_id = %s"
+        params.append(pacienteId)
+
+    if medicoId is not None:
+        sql += " AND medicos_id = %s"
+        params.append(medicoId)
+
+    sql += " ORDER BY fecha_emision DESC, id DESC"
+
+    with get_connection() as conn, conn.cursor(dictionary=True) as cur:
+        cur.execute(sql, tuple(params))
+        return cur.fetchall()
+
+
+@app.post("/api/recetas", status_code=201)
+def crear_receta(body: dict):
+
+    turno_id = body.get("turno_id")
+    medico_id = body.get("medico_id")
+    paciente_id = body.get("paciente_id")
+    indicaciones = body.get("indicaciones", "")
+
+    # Validaciones básicas
+    if not turno_id:
+        raise HTTPException(400, "turno_id es obligatorio")
+    if not medico_id:
+        raise HTTPException(400, "medico_id es obligatorio")
+    if not paciente_id:
+        raise HTTPException(400, "paciente_id es obligatorio")
+
+    # Validar turno (exista + coincidan medico/paciente + esté atendido)
+    sql_turno = """
+        SELECT 
+            t.pacientes_id, 
+            t.medicos_id, 
+            et.nombre AS estado
+        FROM turnos t
+        JOIN estado_turno et ON et.id = t.estado_turno_id
+        WHERE t.id = %s
+    """
+
+    with get_connection() as conn, conn.cursor(dictionary=True) as cur:
+        cur.execute(sql_turno, (turno_id,))
+        turno = cur.fetchone()
+
+        if not turno:
+            raise HTTPException(404, "Turno no encontrado")
+
+        if turno["pacientes_id"] != paciente_id:
+            raise HTTPException(400, "El turno no pertenece a este paciente")
+
+        if turno["medicos_id"] != medico_id:
+            raise HTTPException(400, "El turno no pertenece a este médico")
+
+        # 🚫 Validación clave: turno debe estar atendido
+        if turno["estado"] != "atendido":
+            raise HTTPException(400, "Solo se pueden emitir recetas de turnos atendidos")
+
+        # Insertar receta
+        sql = """
+            INSERT INTO recetas 
+                (turnos_id, medicos_id, pacientes_id, fecha_emision, indicaciones)
+            VALUES 
+                (%s, %s, %s, CURDATE(), %s)
+        """
+
+        cur.execute(sql, (turno_id, medico_id, paciente_id, indicaciones))
+        conn.commit()
+
+        new_id = cur.lastrowid
+
+        # Devolver receta recién creada
+        cur.execute("""
+            SELECT 
+                id, 
+                turnos_id AS turno_id, 
+                medicos_id AS medico_id, 
+                pacientes_id AS paciente_id,
+                fecha_emision, 
+                indicaciones
+            FROM recetas
+            WHERE id = %s
+        """, (new_id,))
+
+        return cur.fetchone()
+
+
+@app.delete("/api/recetas/{receta_id}", status_code=204)
+def borrar_receta(receta_id: int):
+
+    sql = "DELETE FROM recetas WHERE id = %s"
+
+    with get_connection() as conn, conn.cursor() as cur:
+        cur.execute(sql, (receta_id,))
+        conn.commit()
+
+        if cur.rowcount == 0:
+            raise HTTPException(404, "Receta no encontrada")
+
+    return
