@@ -28,6 +28,7 @@ export default function TurnosForm({ onSuccess, editingTurno, onCancelEdit }) {
   const [horarios, setHorarios] = useState([]);
   // New state to hold agenda entries for selected doctor
   const [agenda, setAgenda] = useState([]);
+  const hoy = new Date().toISOString().split("T")[0];
 
   // ---------------- VALIDACIONES ----------------
   // ---------------- VALIDACIONES ----------------
@@ -50,7 +51,7 @@ export default function TurnosForm({ onSuccess, editingTurno, onCancelEdit }) {
       if (!form.fecha) e.fecha = "La fecha es obligatoria";
       if (!form.horario) e.horario = "Elegí horario";
     }
-
+    
     return e;
   };
 
@@ -318,6 +319,7 @@ export default function TurnosForm({ onSuccess, editingTurno, onCancelEdit }) {
                     <input
                       type="date"
                       name="fecha"
+                      min={hoy} 
                       className={`form-control ${touched.fecha && errors.fecha ? "is-invalid" : ""
                         }`}
                       value={form.fecha}
