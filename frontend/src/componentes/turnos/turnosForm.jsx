@@ -26,6 +26,8 @@ export default function TurnosForm({ onSuccess, editingTurno, onCancelEdit }) {
   const [medicos, setMedicos] = useState([]);
   const [estados, setEstados] = useState([]);
   const [horarios, setHorarios] = useState([]);
+  // New state to hold agenda entries for selected doctor
+  const [agenda, setAgenda] = useState([]);
 
   // ---------------- VALIDACIONES ----------------
   // ---------------- VALIDACIONES ----------------
@@ -59,18 +61,32 @@ export default function TurnosForm({ onSuccess, editingTurno, onCancelEdit }) {
   // ---------------- CARGO LISTAS ----------------
   useEffect(() => {
     fetch(`${API_BASE}/api/pacientes`).then(r => r.json()).then(setPacientes);
-    fetch(`${API_BASE}/api/medicos`).then(r => r.json()).then(setMedicos);
+    fetch(`${API_BASE}/api/medicos?solo_con_agenda=true`).then(r => r.json()).then(setMedicos);
     fetch(`${API_BASE}/api/estados`).then(r => r.json()).then(setEstados);
   }, []);
 
-  // ---------------- HORARIOS ----------------
-  const generarHorarios = (duracion) => {
-    const arr = [];
-    const inicio = 10 * 60;
-    const fin = 20 * 60;
-    duracion = Number(duracion);
+  // Fetch agenda whenever a doctor is selected
+  useEffect(() => {
+    if (form.medico_id) {
+      fetch(`${API_BASE}/api/agenda?medico_id=${form.medico_id}`)
+        .then(r => r.json())
+        .then(setAgenda);
+    } else {
+      setAgenda([]);
+    }
+  }, [form.medico_id]);
 
-    for (let m = inicio; m <= fin; m += duracion) {
+  // ---------------- HORARIOS ----------------
+  const generarHorarios = (inicioStr, finStr, duracion) => {
+    const toMinutes = (t) => {
+      const [h, m] = t.split(":");
+      return Number(h) * 60 + Number(m);
+    };
+    const inicio = toMinutes(inicioStr);
+    const fin = toMinutes(finStr);
+    const step = Number(duracion);
+    const arr = [];
+    for (let m = inicio; m <= fin; m += step) {
       const h = String(Math.floor(m / 60)).padStart(2, "0");
       const min = String(m % 60).padStart(2, "0");
       arr.push(`${h}:${min}`);
@@ -79,10 +95,25 @@ export default function TurnosForm({ onSuccess, editingTurno, onCancelEdit }) {
   };
 
   useEffect(() => {
-    if (form.fecha && form.duracion_min) {
-      setHorarios(generarHorarios(form.duracion_min));
+    if (form.fecha && agenda.length > 0) {
+      const dateObj = new Date(form.fecha);
+      const weekday = dateObj.getDay(); // 0 = Sunday, 1 = Monday ...
+      const entry = agenda.find(a => a.dia_semana === weekday);
+      if (entry) {
+        // Update form duration to match agenda
+        setForm(prev => ({ ...prev, duracion_min: entry.duracion_min }));
+        const slots = generarHorarios(entry.hora_inicio, entry.hora_fin, entry.duracion_min);
+        setHorarios(slots);
+      } else {
+        // No agenda for this day
+        setHorarios([]);
+        // Optionally set an error for fecha
+        setErrors(prev => ({ ...prev, fecha: "El médico no atiende este día" }));
+      }
+    } else {
+      setHorarios([]);
     }
-  }, [form.fecha, form.duracion_min]);
+  }, [form.fecha, agenda]);
 
   // ---------------- EDICIÓN ----------------
   useEffect(() => {
