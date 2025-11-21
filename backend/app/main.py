@@ -574,3 +574,112 @@ def actualizar_turno(turno_id: int, body: dict):
     conn.commit()
 
     return {"detail": "Turno actualizado correctamente"}
+
+
+# ===================== LISTAR RECETAS ==========================
+
+@app.get("/api/recetas")
+def listar_recetas(
+    turno_id: int | None = None,
+    paciente_id: int | None = None,
+    medico_id: int | None = None
+):
+    sql = """
+        SELECT 
+            r.id,
+            r.turnos_id AS turno_id,
+            r.medicos_id AS medico_id,
+            r.pacientes_id AS paciente_id,
+            r.fecha_emision,
+            r.indicaciones
+        FROM recetas r
+        WHERE 1=1
+    """
+    params = []
+
+    if turno_id:
+        sql += " AND r.turnos_id = %s"
+        params.append(turno_id)
+
+    if paciente_id:
+        sql += " AND r.pacientes_id = %s"
+        params.append(paciente_id)
+
+    if medico_id:
+        sql += " AND r.medicos_id = %s"
+        params.append(medico_id)
+
+    sql += " ORDER BY r.id DESC"
+
+    with get_connection() as conn, conn.cursor(dictionary=True) as cur:
+        cur.execute(sql, params)
+        return cur.fetchall()
+
+
+# ===================== CREAR RECETA ==========================
+
+@app.post("/api/recetas", status_code=201)
+def crear_receta(body: dict):
+
+    turno_id = body.get("turno_id")
+    medico_id = body.get("medico_id")
+    paciente_id = body.get("paciente_id")
+    indicaciones = body.get("indicaciones", "")
+
+    # ---- Validar campos obligatorios ----
+    if not turno_id:
+        raise HTTPException(400, "El turno es obligatorio")
+    if not medico_id:
+        raise HTTPException(400, "El médico es obligatorio")
+    if not paciente_id:
+        raise HTTPException(400, "El paciente es obligatorio")
+
+    # ---- 1. Validar que el turno exista ----
+    sql_turno = """
+        SELECT id, pacientes_id, medicos_id
+        FROM turnos
+        WHERE id = %s
+    """
+
+    with get_connection() as conn, conn.cursor(dictionary=True) as cur:
+        cur.execute(sql_turno, (turno_id,))
+        turno = cur.fetchone()
+
+    if not turno:
+        raise HTTPException(404, "Turno no encontrado")
+
+    # ---- 2. Validar que el turno pertenece al médico correcto ----
+    if turno["medicos_id"] != medico_id:
+        raise HTTPException(400, "El turno no pertenece a este médico")
+
+    # ---- 3. Validar que el turno pertenece al paciente correcto ----
+    if turno["pacientes_id"] != paciente_id:
+        raise HTTPException(400, "El turno no pertenece a este paciente")
+
+    # ---- 4. Insertar receta ----
+    sql_insert = """
+        INSERT INTO recetas (turnos_id, medicos_id, pacientes_id, fecha_emision, indicaciones)
+        VALUES (%s, %s, %s, CURDATE(), %s)
+    """
+
+    with get_connection() as conn, conn.cursor() as cur:
+        cur.execute(sql_insert, (turno_id, medico_id, paciente_id, indicaciones))
+        conn.commit()
+        new_id = cur.lastrowid
+
+    # ---- 5. Obtener receta creada ----
+    sql_get = """
+        SELECT 
+            id,
+            turnos_id AS turno_id,
+            medicos_id AS medico_id,
+            pacientes_id AS paciente_id,
+            fecha_emision,
+            indicaciones
+        FROM recetas
+        WHERE id = %s
+    """
+
+    with get_connection() as conn, conn.cursor(dictionary=True) as cur:
+        cur.execute(sql_get, (new_id,))
+        return cur.fetchone()
