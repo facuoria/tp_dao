@@ -36,9 +36,21 @@ export default function TurnosTabla({ reloadKey, onEdit }) {
       .catch(() => alert("Error al eliminar turno"));
   };
 
+  const formatFecha = (isoString) => {
+    if (!isoString) return "-";
+    const date = new Date(isoString);
+    return date.toLocaleString("es-AR", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit"
+    });
+  };
+
   return (
     <div className="card shadow-lg border-0 rounded-4 mt-4 w-100" style={{ maxWidth: "900px" }}>
-      
+
       <div className="card-header bg-white border-0 pt-4 pb-2 d-flex justify-content-between">
         <div>
           <h2 className="h5 fw-bold mb-1">Turnos registrados</h2>
@@ -66,7 +78,7 @@ export default function TurnosTabla({ reloadKey, onEdit }) {
         {!loading && !error && turnos.length > 0 && (
           <div className="table-responsive">
             <table className="table table-hover table-striped align-middle mb-0">
-              
+
               <thead className="table-light">
                 <tr className="text-center">
                   <th>Paciente</th>
@@ -88,7 +100,7 @@ export default function TurnosTabla({ reloadKey, onEdit }) {
 
                     <td>{t.medico_apellido}, {t.medico_nombre}</td>
 
-                    <td>{t.inicio}</td>
+                    <td>{formatFecha(t.inicio)}</td>
 
                     <td>{t.duracion} min</td>
 
@@ -100,21 +112,23 @@ export default function TurnosTabla({ reloadKey, onEdit }) {
                       {t.observaciones || "-"}
                     </td>
 
-                    <td className="d-flex justify-content-center gap-2">
-                      <button
-                        className="btn btn-outline-secondary btn-sm rounded-3"
-                        onClick={() => onEdit && onEdit(t)}
-                      >
-                        Editar
-                      </button>
+                    <td>
+                      <div className="d-flex justify-content-center gap-2">
+                        <button
+                          className="btn btn-outline-secondary btn-sm rounded-3"
+                          onClick={() => onEdit && onEdit(t)}
+                        >
+                          Editar
+                        </button>
 
-                      <button
-                        className="btn btn-danger btn-sm rounded-3"
-                        disabled={!/cancelado/i.test(t.estado)}
-                        onClick={() => deleteTurno(t.id, t.estado)}
-                      >
-                        Eliminar
-                      </button>
+                        <button
+                          className="btn btn-danger btn-sm rounded-3"
+                          disabled={!/cancelado/i.test(t.estado)}
+                          onClick={() => deleteTurno(t.id, t.estado)}
+                        >
+                          Eliminar
+                        </button>
+                      </div>
                     </td>
 
                   </tr>

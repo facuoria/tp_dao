@@ -15,6 +15,9 @@ from SQL.db import (
     eliminar_especialidad_por_id,
     insertar_turno,
     eliminar_turno_por_id,
+    insertar_agenda,
+    eliminar_agenda_por_id,
+    actualizar_agenda_por_id
 )
 from fastapi.responses import RedirectResponse
 
@@ -146,29 +149,38 @@ def actualizar_paciente_api(paciente_id: int, body: dict):
         return {"id": paciente_id}
     except ValueError as ve:
         raise HTTPException(status_code=400, detail=str(ve))
-    except mysql.connector.Error as e:
-        print("MySQL error:", e.errno, e.msg)
-        raise HTTPException(status_code=500, detail="Error al actualizar paciente")
-
 # ---------- LISTAR MEDICOS ----------
 @app.get("/api/medicos")
-def listar_medicos():
-    sql = """ 
-
-        SELECT m.id,
-               m.nombre,
-               m.apellido,
-               m.matricula,
-               m.especialidad_id,
-               e.nombre AS especialidades
-        FROM medicos m
-        JOIN especialidades e ON m.especialidad_id = e.id
-        ORDER BY id DESC
+def listar_medicos(solo_con_agenda: bool = False):
+    if solo_con_agenda:
+        sql = """ 
+            SELECT DISTINCT m.id,
+                   m.nombre,
+                   m.apellido,
+                   m.matricula,
+                   m.especialidad_id,
+                   e.nombre AS especialidades
+            FROM medicos m
+            JOIN especialidades e ON m.especialidad_id = e.id
+            JOIN agenda_medico a ON m.id = a.medicos_id
+            ORDER BY m.id DESC
+        """
+    else:
+        sql = """ 
+            SELECT m.id,
+                   m.nombre,
+                   m.apellido,
+                   m.matricula,
+                   m.especialidad_id,
+                   e.nombre AS especialidades
+            FROM medicos m
+            JOIN especialidades e ON m.especialidad_id = e.id
+            ORDER BY m.id DESC
         """
     with get_connection() as conn, conn.cursor(dictionary=True) as cur:
         cur.execute(sql)
         return cur.fetchall()
-    
+
 # ---------- INSERTAR MEDICO ----------
 @app.post("/api/medicos", status_code=201)
 def crear_medico(body: dict):
@@ -291,70 +303,98 @@ def borrar_paciente(especialidad_id: int):
     except mysql.connector.Error:
         raise HTTPException(status_code=500, detail="Error al borrar especialidad")
     
-# ===================== AGENDA ==========================
+# ===================== VISUALIZAR AGENDA ==========================
 
 @app.get("/api/agenda")
-def listar_agenda():
-    sql = """
-        SELECT 
-            a.id,
-            a.medicos_id AS medico_id,
-            m.nombre AS medico_nombre,
-            m.apellido AS medico_apellido,
-            a.dia_semana,
-            DATE_FORMAT(a.hora_inicio, '%H:%i') AS hora_inicio,
-            DATE_FORMAT(a.hora_fin, '%H:%i') AS hora_fin,
-            a.duracion_min
-        FROM agenda_medico a
-        JOIN medicos m ON a.medicos_id = m.id
-        ORDER BY m.apellido, a.dia_semana, a.hora_inicio
-    """
-    with get_connection() as conn, conn.cursor(dictionary=True) as cur:
-        cur.execute(sql)
-        return cur.fetchall()
+def listar_agenda(medico_id: int = None):
+    if medico_id:
+        sql = """
+            SELECT 
+                a.id,
+                a.medicos_id AS medico_id,
+                m.nombre AS medico_nombre,
+                m.apellido AS medico_apellido,
+                a.dia_semana,
+                DATE_FORMAT(a.hora_inicio, '%H:%i') AS hora_inicio,
+                DATE_FORMAT(a.hora_fin, '%H:%i') AS hora_fin,
+                a.duracion_min
+            FROM agenda_medico a
+            JOIN medicos m ON a.medicos_id = m.id
+            WHERE a.medicos_id = %s
+            ORDER BY a.dia_semana, a.hora_inicio
+        """
+        params = (medico_id,)
+    else:
+        sql = """
+            SELECT 
+                a.id,
+                a.medicos_id AS medico_id,
+                m.nombre AS medico_nombre,
+                m.apellido AS medico_apellido,
+                a.dia_semana,
+                DATE_FORMAT(a.hora_inicio, '%H:%i') AS hora_inicio,
+                DATE_FORMAT(a.hora_fin, '%H:%i') AS hora_fin,
+                a.duracion_min
+            FROM agenda_medico a
+            JOIN medicos m ON a.medicos_id = m.id
+            ORDER BY m.apellido, a.dia_semana, a.hora_inicio
+        """
+        params = ()
 
+    with get_connection() as conn, conn.cursor(dictionary=True) as cur:
+        cur.execute(sql, params)
+        return cur.fetchall()
+#------------------------- INSERTAR AGENDA -------------------------
 
 @app.post("/api/agenda", status_code=201)
 def crear_agenda(body: dict):
-
-    medico_id = body.get("medico_id")
-    dia_semana = body.get("dia_semana")
-    hora_inicio = body.get("hora_inicio")
-    hora_fin = body.get("hora_fin")
-    duracion_min = body.get("duracion_min")
-
-    if None in (medico_id, dia_semana, hora_inicio, hora_fin, duracion_min):
-        raise HTTPException(400, "Faltan campos")
-
-    # verificar duplicado
-    sql_dup = """
-        SELECT id FROM agenda_medico
-        WHERE medicos_id=%s AND dia_semana=%s AND hora_inicio=%s
-    """
-    with get_connection() as conn, conn.cursor(dictionary=True) as cur:
-        cur.execute(sql_dup, (medico_id, dia_semana, hora_inicio))
-        if cur.fetchone():
-            raise HTTPException(409, "Ya hay una franja en ese horario")
-
-        sql = """
-            INSERT INTO agenda_medico
-            (medicos_id, dia_semana, hora_inicio, hora_fin, duracion_min)
-            VALUES (%s,%s,%s,%s,%s)
-        """
-        cur.execute(sql, (medico_id, dia_semana, hora_inicio, hora_fin, duracion_min))
-        conn.commit()
-        return {"id": cur.lastrowid}
-    
+    try:
+        new_id = insertar_agenda(
+            body.get("medico_id"),
+            body.get("dia_semana"),
+            body.get("hora_inicio"),
+            body.get("hora_fin"),
+            body.get("duracion_min")
+        )
+        return {"id": new_id}
+    except ValueError as ve:
+        raise HTTPException(status_code=409, detail=str(ve))
+    except mysql.connector.Error:
+        raise HTTPException(status_code=500, detail="Error al crear agenda")
+#------------------------- BORRAR AGENDA -------------------------
 @app.delete("/api/agenda/{agenda_id}", status_code=204)
 def borrar_agenda(agenda_id: int):
-    sql = "DELETE FROM agenda_medico WHERE id = %s"
-    with get_connection() as conn, conn.cursor() as cur:
-        cur.execute(sql, (agenda_id,))
-        if cur.rowcount == 0:
-            raise HTTPException(404, "Franja no encontrada")
-        conn.commit()
-        return
-    
+    try:
+        borradas = eliminar_agenda_por_id(agenda_id)
+        if borradas == 0:
+            raise HTTPException(status_code=404, detail="Agenda no encontrada")
+        return  # 204 No Content
+    except ValueError as ve:
+        raise HTTPException(status_code=409, detail=str(ve))
+    except mysql.connector.Error:
+        raise HTTPException(status_code=500, detail="Error al borrar agenda")
+
+#------------------------- ACTUALIZAR AGENDA -------------------------
+@app.put("/api/agenda/{agenda_id}", status_code = 204)
+def actualizar_agenda(agenda_id: int, body: dict):
+    try:
+        actualizadas = actualizar_agenda_por_id(
+            agenda_id,
+            body.get("medico_id"),
+            body.get("dia_semana"),
+            body.get("hora_inicio"),
+            body.get("hora_fin"),
+            body.get("duracion_min")
+        )
+        if actualizadas == 0:
+            raise HTTPException(status_code=404, detail="Agenda no encontrada")
+        return  # 204 No Content
+    except ValueError as ve:
+        raise HTTPException(status_code=409, detail=str(ve))
+    except mysql.connector.Error:
+        raise HTTPException(status_code=500, detail="Error al actualizar agenda")
+
+
 #------------ VISUALIZAR ESTADOS --------------------
 @app.get("/api/estados")
 def listar_estados():
