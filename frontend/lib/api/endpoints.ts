@@ -64,6 +64,9 @@ export const listRecetas = (params: { turnoId?: ID; pacienteId?: ID; medicoId?: 
 export const createReceta = (data: Partial<Receta>) =>
   api<Receta>('/api/recetas', { method: 'POST', body: JSON.stringify(data) });
 
+export const deleteReceta = (id: ID) =>
+  api<void>(`/api/recetas/${id}`, { method: 'DELETE' });
+
 // AGENDA (por médico)
 export const listAgenda = (medicoId: ID) =>
   api<AgendaMedico[]>(`/api/medicos/${medicoId}/agenda`);

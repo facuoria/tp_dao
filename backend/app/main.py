@@ -441,7 +441,6 @@ def listar_turnos():
         cur.execute(sql)
         return cur.fetchall()
 
-
 #------------------INSERTAR TURNO------------------
 @app.post("/api/turnos", status_code=201)
 def crear_turno(body: dict):
@@ -575,48 +574,45 @@ def actualizar_turno(turno_id: int, body: dict):
 
     return {"detail": "Turno actualizado correctamente"}
 
-
-# ===================== LISTAR RECETAS ==========================
+# ===================== RECETAS ==========================
 
 @app.get("/api/recetas")
 def listar_recetas(
-    turno_id: int | None = None,
-    paciente_id: int | None = None,
-    medico_id: int | None = None
+    turnoId: int | None = None,
+    pacienteId: int | None = None,
+    medicoId: int | None = None,
 ):
     sql = """
         SELECT 
-            r.id,
-            r.turnos_id AS turno_id,
-            r.medicos_id AS medico_id,
-            r.pacientes_id AS paciente_id,
-            r.fecha_emision,
-            r.indicaciones
-        FROM recetas r
+            id,
+            turnos_id AS turno_id,
+            medicos_id AS medico_id,
+            pacientes_id AS paciente_id,
+            fecha_emision,
+            indicaciones
+        FROM recetas
         WHERE 1=1
     """
     params = []
 
-    if turno_id:
-        sql += " AND r.turnos_id = %s"
-        params.append(turno_id)
+    if turnoId is not None:
+        sql += " AND turnos_id = %s"
+        params.append(turnoId)
 
-    if paciente_id:
-        sql += " AND r.pacientes_id = %s"
-        params.append(paciente_id)
+    if pacienteId is not None:
+        sql += " AND pacientes_id = %s"
+        params.append(pacienteId)
 
-    if medico_id:
-        sql += " AND r.medicos_id = %s"
-        params.append(medico_id)
+    if medicoId is not None:
+        sql += " AND medicos_id = %s"
+        params.append(medicoId)
 
-    sql += " ORDER BY r.id DESC"
+    sql += " ORDER BY fecha_emision DESC, id DESC"
 
     with get_connection() as conn, conn.cursor(dictionary=True) as cur:
-        cur.execute(sql, params)
+        cur.execute(sql, tuple(params))
         return cur.fetchall()
 
-
-# ===================== CREAR RECETA ==========================
 
 @app.post("/api/recetas", status_code=201)
 def crear_receta(body: dict):
@@ -626,60 +622,81 @@ def crear_receta(body: dict):
     paciente_id = body.get("paciente_id")
     indicaciones = body.get("indicaciones", "")
 
-    # ---- Validar campos obligatorios ----
+    # Validaciones básicas
     if not turno_id:
-        raise HTTPException(400, "El turno es obligatorio")
+        raise HTTPException(400, "turno_id es obligatorio")
     if not medico_id:
-        raise HTTPException(400, "El médico es obligatorio")
+        raise HTTPException(400, "medico_id es obligatorio")
     if not paciente_id:
-        raise HTTPException(400, "El paciente es obligatorio")
+        raise HTTPException(400, "paciente_id es obligatorio")
 
-    # ---- 1. Validar que el turno exista ----
+    # Validar turno (exista + coincidan medico/paciente + esté atendido)
     sql_turno = """
-        SELECT id, pacientes_id, medicos_id
-        FROM turnos
-        WHERE id = %s
+        SELECT 
+            t.pacientes_id, 
+            t.medicos_id, 
+            et.nombre AS estado
+        FROM turnos t
+        JOIN estado_turno et ON et.id = t.estado_turno_id
+        WHERE t.id = %s
     """
 
     with get_connection() as conn, conn.cursor(dictionary=True) as cur:
         cur.execute(sql_turno, (turno_id,))
         turno = cur.fetchone()
 
-    if not turno:
-        raise HTTPException(404, "Turno no encontrado")
+        if not turno:
+            raise HTTPException(404, "Turno no encontrado")
 
-    # ---- 2. Validar que el turno pertenece al médico correcto ----
-    if turno["medicos_id"] != medico_id:
-        raise HTTPException(400, "El turno no pertenece a este médico")
+        if turno["pacientes_id"] != paciente_id:
+            raise HTTPException(400, "El turno no pertenece a este paciente")
 
-    # ---- 3. Validar que el turno pertenece al paciente correcto ----
-    if turno["pacientes_id"] != paciente_id:
-        raise HTTPException(400, "El turno no pertenece a este paciente")
+        if turno["medicos_id"] != medico_id:
+            raise HTTPException(400, "El turno no pertenece a este médico")
 
-    # ---- 4. Insertar receta ----
-    sql_insert = """
-        INSERT INTO recetas (turnos_id, medicos_id, pacientes_id, fecha_emision, indicaciones)
-        VALUES (%s, %s, %s, CURDATE(), %s)
-    """
+        # 🚫 Validación clave: turno debe estar atendido
+        if turno["estado"] != "atendido":
+            raise HTTPException(400, "Solo se pueden emitir recetas de turnos atendidos")
 
-    with get_connection() as conn, conn.cursor() as cur:
-        cur.execute(sql_insert, (turno_id, medico_id, paciente_id, indicaciones))
+        # Insertar receta
+        sql = """
+            INSERT INTO recetas 
+                (turnos_id, medicos_id, pacientes_id, fecha_emision, indicaciones)
+            VALUES 
+                (%s, %s, %s, CURDATE(), %s)
+        """
+
+        cur.execute(sql, (turno_id, medico_id, paciente_id, indicaciones))
         conn.commit()
+
         new_id = cur.lastrowid
 
-    # ---- 5. Obtener receta creada ----
-    sql_get = """
-        SELECT 
-            id,
-            turnos_id AS turno_id,
-            medicos_id AS medico_id,
-            pacientes_id AS paciente_id,
-            fecha_emision,
-            indicaciones
-        FROM recetas
-        WHERE id = %s
-    """
+        # Devolver receta recién creada
+        cur.execute("""
+            SELECT 
+                id, 
+                turnos_id AS turno_id, 
+                medicos_id AS medico_id, 
+                pacientes_id AS paciente_id,
+                fecha_emision, 
+                indicaciones
+            FROM recetas
+            WHERE id = %s
+        """, (new_id,))
 
-    with get_connection() as conn, conn.cursor(dictionary=True) as cur:
-        cur.execute(sql_get, (new_id,))
         return cur.fetchone()
+
+
+@app.delete("/api/recetas/{receta_id}", status_code=204)
+def borrar_receta(receta_id: int):
+
+    sql = "DELETE FROM recetas WHERE id = %s"
+
+    with get_connection() as conn, conn.cursor() as cur:
+        cur.execute(sql, (receta_id,))
+        conn.commit()
+
+        if cur.rowcount == 0:
+            raise HTTPException(404, "Receta no encontrada")
+
+    return
