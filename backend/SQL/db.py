@@ -10,7 +10,7 @@ CFG = {
     "host": os.getenv("DB_HOST", "localhost"),
     "port": int(os.getenv("DB_PORT", "3306")),
     "user": os.getenv("DB_USER", "turnero"),
-    "password": os.getenv("DB_PASSWORD", "Ju4nch12oo3*"),
+    "password": os.getenv("DB_PASSWORD", "clave_segura"),
     "database": os.getenv("DB_NAME", "turnosMedicos"),
     "autocommit": False,
     "charset": "utf8",
