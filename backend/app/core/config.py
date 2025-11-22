@@ -1,0 +1,23 @@
+import os
+from functools import lru_cache
+
+from dotenv import load_dotenv
+
+load_dotenv()
+
+
+class Settings:
+    def __init__(self) -> None:
+        self.db_host: str = os.getenv("DB_HOST", "localhost")
+        self.db_port: int = int(os.getenv("DB_PORT", "3306"))
+        self.db_user: str = os.getenv("DB_USER", "turnero")
+        self.db_password: str = os.getenv("DB_PASSWORD", "clave_segura")
+        self.db_name: str = os.getenv("DB_NAME", "turnosMedicos")
+
+
+@lru_cache
+def get_settings() -> Settings:
+    return Settings()
+
+
+settings = get_settings()
