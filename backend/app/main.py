@@ -414,6 +414,9 @@ def listar_turnos():
     sql = """
     SELECT 
         t.id,
+        t.medicos_id AS medico_id,
+        m.especialidad_id AS especialidad_id,
+        esp.nombre AS especialidad_nombre,
         e.nombre AS estado,
 
         p.dni AS paciente_dni,
@@ -432,6 +435,7 @@ def listar_turnos():
     FROM turnos t
     JOIN pacientes p      ON t.pacientes_id = p.id
     JOIN medicos m        ON t.medicos_id = m.id
+    JOIN especialidades esp ON m.especialidad_id = esp.id
     JOIN estado_turno e   ON t.estado_turno_id = e.id
 
     ORDER BY t.fecha_hora DESC
