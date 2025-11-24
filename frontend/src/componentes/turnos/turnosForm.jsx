@@ -26,44 +26,43 @@ export default function TurnosForm({ onSuccess, editingTurno, onCancelEdit }) {
   const [medicos, setMedicos] = useState([]);
   const [estados, setEstados] = useState([]);
   const [horarios, setHorarios] = useState([]);
-  // New state to hold agenda entries for selected doctor
+  const [turnos, setTurnos] = useState([]);
   const [agenda, setAgenda] = useState([]);
   const hoy = new Date().toISOString().split("T")[0];
 
   // ---------------- VALIDACIONES ----------------
-  // ---------------- VALIDACIONES ----------------
   const validate = () => {
     const e = {};
 
-    // Validaciones solo para creación
     if (!isEdit) {
       if (!form.paciente_id) e.paciente_id = "Elegí paciente";
       if (!form.medico_id) e.medico_id = "Elegí médico";
     }
 
-    // Validaciones comunes
     if (!form.estado_turno_id) e.estado_turno_id = "Elegí estado";
 
-    // Validar fecha/hora solo si es nuevo O si es reprogramado
     const isReprogramado = estados.find(est => est.id == form.estado_turno_id)?.nombre.toLowerCase() === "reprogramado";
 
     if (!isEdit || isReprogramado) {
       if (!form.fecha) e.fecha = "La fecha es obligatoria";
       if (!form.horario) e.horario = "Elegí horario";
     }
-    
+
     return e;
   };
 
   useEffect(() => {
     setErrors(validate());
-  }, [form, isEdit, estados]); // Agregamos dependencias
+  }, [form, isEdit, estados]);
 
   // ---------------- CARGO LISTAS ----------------
+  const loadTurnos = () => fetch(`${API_BASE}/api/turnos`).then(r => r.json()).then(setTurnos);
+
   useEffect(() => {
     fetch(`${API_BASE}/api/pacientes`).then(r => r.json()).then(setPacientes);
     fetch(`${API_BASE}/api/medicos?solo_con_agenda=true`).then(r => r.json()).then(setMedicos);
     fetch(`${API_BASE}/api/estados`).then(r => r.json()).then(setEstados);
+    loadTurnos();
   }, []);
 
   // Fetch agenda whenever a doctor is selected
@@ -101,30 +100,40 @@ export default function TurnosForm({ onSuccess, editingTurno, onCancelEdit }) {
       const weekday = dateObj.getDay(); // 0 = Sunday, 1 = Monday ...
       const entry = agenda.find(a => a.dia_semana === weekday);
       if (entry) {
-        // Update form duration to match agenda
         setForm(prev => ({ ...prev, duracion_min: entry.duracion_min }));
         const slots = generarHorarios(entry.hora_inicio, entry.hora_fin, entry.duracion_min);
-        setHorarios(slots);
+
+        const disponibles = slots.filter(hora => {
+          const ignoreId = isEdit ? editingTurno?.id : null;
+          return !turnos.some(t => {
+            if (ignoreId && t.id === ignoreId) return false;
+            if (String(t.medico_id) !== String(form.medico_id)) return false;
+            if (/atendido|cancelado/i.test(t.estado || "")) return false;
+            if (!t.inicio) return false;
+            const tFecha = t.inicio.split("T")[0];
+            const tHora = t.inicio.slice(11, 16);
+            return tFecha === form.fecha && tHora === hora;
+          });
+        });
+
+        setHorarios(disponibles);
       } else {
-        // No agenda for this day
         setHorarios([]);
-        // Optionally set an error for fecha
         setErrors(prev => ({ ...prev, fecha: "El médico no atiende este día" }));
       }
     } else {
       setHorarios([]);
     }
-  }, [form.fecha, agenda]);
+  }, [form.fecha, agenda, turnos, form.medico_id, isEdit, editingTurno]);
 
   // ---------------- EDICIÓN ----------------
   useEffect(() => {
     if (editingTurno && estados.length > 0) {
-      // Mapear el nombre del estado al ID
       const estadoEncontrado = estados.find(e => e.nombre.toLowerCase() === editingTurno.estado.toLowerCase());
 
       setForm({
-        paciente_id: "", // No se edita
-        medico_id: "",   // No se edita
+        paciente_id: "",
+        medico_id: editingTurno.medico_id ?? "",
         fecha: editingTurno.inicio.split("T")[0],
         horario: editingTurno.inicio.split("T")[1].slice(0, 5),
         duracion_min: editingTurno.duracion,
@@ -163,7 +172,6 @@ export default function TurnosForm({ onSuccess, editingTurno, onCancelEdit }) {
     let method;
 
     if (isEdit) {
-      // Payload reducido para edición
       payload = {
         estado_turno_id: Number(form.estado_turno_id),
         fecha_hora: (form.fecha && form.horario) ? `${form.fecha}T${form.horario}` : null
@@ -171,7 +179,6 @@ export default function TurnosForm({ onSuccess, editingTurno, onCancelEdit }) {
       endpoint = `${API_BASE}/api/turnos/${editingTurno.id}`;
       method = "PUT";
     } else {
-      // Payload completo para creación
       payload = {
         paciente_id: Number(form.paciente_id),
         medico_id: Number(form.medico_id),
@@ -197,6 +204,7 @@ export default function TurnosForm({ onSuccess, editingTurno, onCancelEdit }) {
         if (onSuccess) onSuccess();
         if (onCancelEdit) onCancelEdit();
         setForm(EMPTY_FORM);
+        loadTurnos();
       } else {
         const data = await res.json();
         setAlert({ ok: false, text: data.detail || "Error inesperado" });
@@ -212,7 +220,6 @@ export default function TurnosForm({ onSuccess, editingTurno, onCancelEdit }) {
   // ---------------- RENDER ----------------
   return (
     <div className="d-flex flex-column align-items-center gap-3" style={{ width: "100%", maxWidth: "520px" }}>
-      {/* BOTÓN */}
       <div className="text-center w-100">
         <button
           className="btn btn-primary btn-lg px-4"
@@ -228,7 +235,6 @@ export default function TurnosForm({ onSuccess, editingTurno, onCancelEdit }) {
         )}
       </div>
 
-      {/* FORM */}
       <div className={`slide-left w-100 ${showForm ? "show" : ""}`}>
         <div className="card shadow border-0 rounded-4 p-4" style={{ width: "100%" }}>
 
@@ -241,13 +247,11 @@ export default function TurnosForm({ onSuccess, editingTurno, onCancelEdit }) {
           <form onSubmit={handleSubmit}>
             <div className="row g-3">
 
-              {/* PACIENTE - Solo visible en creación */}
               {!isEdit && (
                 <div className="col-md-6">
                   <div className="form-floating">
                     <select
-                      className={`form-select ${touched.paciente_id && errors.paciente_id ? "is-invalid" : ""
-                        }`}
+                      className={`form-select ${touched.paciente_id && errors.paciente_id ? "is-invalid" : ""}`}
                       name="paciente_id"
                       value={form.paciente_id}
                       onChange={handleChange}
@@ -266,13 +270,11 @@ export default function TurnosForm({ onSuccess, editingTurno, onCancelEdit }) {
                 </div>
               )}
 
-              {/* MÉDICO - Solo visible en creación */}
               {!isEdit && (
                 <div className="col-md-6">
                   <div className="form-floating">
                     <select
-                      className={`form-select ${touched.medico_id && errors.medico_id ? "is-invalid" : ""
-                        }`}
+                      className={`form-select ${touched.medico_id && errors.medico_id ? "is-invalid" : ""}`}
                       name="medico_id"
                       value={form.medico_id}
                       onChange={handleChange}
@@ -291,12 +293,10 @@ export default function TurnosForm({ onSuccess, editingTurno, onCancelEdit }) {
                 </div>
               )}
 
-              {/* ESTADO - Siempre visible */}
               <div className="col-md-6">
                 <div className="form-floating">
                   <select
-                    className={`form-select ${touched.estado_turno_id && errors.estado_turno_id ? "is-invalid" : ""
-                      }`}
+                    className={`form-select ${touched.estado_turno_id && errors.estado_turno_id ? "is-invalid" : ""}`}
                     name="estado_turno_id"
                     value={form.estado_turno_id}
                     onChange={handleChange}
@@ -312,16 +312,14 @@ export default function TurnosForm({ onSuccess, editingTurno, onCancelEdit }) {
                 </div>
               </div>
 
-              {/* FECHA - Visible en creación O si es reprogramado */}
               {(!isEdit || (isEdit && estados.find(e => e.id == form.estado_turno_id)?.nombre.toLowerCase() === "reprogramado")) && (
                 <div className="col-md-6">
                   <div className="form-floating">
                     <input
                       type="date"
                       name="fecha"
-                      min={hoy} 
-                      className={`form-control ${touched.fecha && errors.fecha ? "is-invalid" : ""
-                        }`}
+                      min={hoy}
+                      className={`form-control ${touched.fecha && errors.fecha ? "is-invalid" : ""}`}
                       value={form.fecha}
                       onChange={handleChange}
                       onBlur={() => markTouched("fecha")}
@@ -332,13 +330,11 @@ export default function TurnosForm({ onSuccess, editingTurno, onCancelEdit }) {
                 </div>
               )}
 
-              {/* HORARIO - Visible en creación O si es reprogramado */}
               {(!isEdit || (isEdit && estados.find(e => e.id == form.estado_turno_id)?.nombre.toLowerCase() === "reprogramado")) && (
                 <div className="col-md-6">
                   <div className="form-floating">
                     <select
-                      className={`form-select ${touched.horario && errors.horario ? "is-invalid" : ""
-                        }`}
+                      className={`form-select ${touched.horario && errors.horario ? "is-invalid" : ""}`}
                       name="horario"
                       value={form.horario}
                       onChange={handleChange}
@@ -355,7 +351,6 @@ export default function TurnosForm({ onSuccess, editingTurno, onCancelEdit }) {
                 </div>
               )}
 
-              {/* MOTIVO - Solo visible en creación */}
               {!isEdit && (
                 <div className="col-md-6">
                   <div className="form-floating">
@@ -370,7 +365,6 @@ export default function TurnosForm({ onSuccess, editingTurno, onCancelEdit }) {
                 </div>
               )}
 
-              {/* OBSERVACIONES - Solo visible en creación (según pedido estricto) */}
               {!isEdit && (
                 <div className="col-12">
                   <div className="form-floating">
@@ -386,7 +380,6 @@ export default function TurnosForm({ onSuccess, editingTurno, onCancelEdit }) {
                 </div>
               )}
 
-              {/* BOTONES */}
               <div className="col-12 d-flex gap-2 mt-3">
                 <button className="btn btn-primary flex-grow-1" disabled={submitting || !isValid}>
                   {submitting ? "Guardando..." : isEdit ? "Actualizar Turno" : "Guardar Turno"}
