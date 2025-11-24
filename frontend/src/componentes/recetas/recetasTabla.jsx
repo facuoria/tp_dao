@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { API_BASE } from "../../api";
 
 export default function RecetasTabla({ reloadKey }) {
@@ -6,6 +6,7 @@ export default function RecetasTabla({ reloadKey }) {
   const [pacientes, setPacientes] = useState([]);
   const [medicos, setMedicos] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [query, setQuery] = useState("");
 
   async function loadData() {
     setLoading(true);
@@ -53,6 +54,17 @@ export default function RecetasTabla({ reloadKey }) {
     if (res.ok) loadData();
   }
 
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return recetas;
+    return recetas.filter((r) => {
+      const paciente = (r.paciente_nombre || "").toLowerCase();
+      const medico = (r.medico_nombre || "").toLowerCase();
+      const indic = (r.indicaciones || "").toLowerCase();
+      return paciente.includes(q) || medico.includes(q) || indic.includes(q);
+    });
+  }, [recetas, query]);
+
   return (
     <div className="card shadow-lg border-0 rounded-4 mt-4 w-100">
       <div className="card-header bg-white border-0 pt-4 pb-2 d-flex justify-content-between align-items-center rounded-top-4">
@@ -63,13 +75,22 @@ export default function RecetasTabla({ reloadKey }) {
           </p>
         </div>
 
-        <button
-          type="button"
-          className="btn btn-outline-primary btn-sm px-3 rounded-3"
-          onClick={loadData}
-        >
-          Recargar
-        </button>
+        <div className="d-flex gap-2">
+          <input
+            className="form-control form-control-sm"
+            style={{ minWidth: "220px" }}
+            placeholder="Buscar por paciente, médico o indicaciones"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+          />
+          <button
+            type="button"
+            className="btn btn-outline-primary btn-sm px-3 rounded-3"
+            onClick={loadData}
+          >
+            Recargar
+          </button>
+        </div>
       </div>
 
       <div className="card-body p-0">
@@ -77,9 +98,9 @@ export default function RecetasTabla({ reloadKey }) {
           <div className="py-4 text-center text-muted">
             Cargando recetas...
           </div>
-        ) : recetas.length === 0 ? (
+        ) : filtered.length === 0 ? (
           <div className="py-4 text-center text-muted">
-            No hay recetas registradas.
+            No hay recetas que coincidan.
           </div>
         ) : (
           <div className="table-responsive">

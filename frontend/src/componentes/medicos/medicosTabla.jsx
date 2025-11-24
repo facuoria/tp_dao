@@ -1,10 +1,11 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { API_BASE } from "../../api.js";
 
 export default function MedicosTabla({ reloadKey, onEdit }) {
   const [medicos, setMedicos] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [query, setQuery] = useState("");
 
   const loadMedicos = () => {
     setLoading(true);
@@ -31,6 +32,18 @@ export default function MedicosTabla({ reloadKey, onEdit }) {
       .catch(() => alert("Error al eliminar médico"));
   };
 
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return medicos;
+    return medicos.filter((m) => {
+      return (
+        m.matricula?.toString().toLowerCase().includes(q) ||
+        m.nombre?.toLowerCase().includes(q) ||
+        m.apellido?.toLowerCase().includes(q)
+      );
+    });
+  }, [medicos, query]);
+
   return (
     <div className="card shadow-lg border-0 rounded-4 mt-4 w-100" style={{ maxWidth: "900px" }}>
       <div className="card-header bg-white border-0 pt-4 pb-2 d-flex justify-content-between">
@@ -40,9 +53,18 @@ export default function MedicosTabla({ reloadKey, onEdit }) {
             Listado de todos los médicos cargados.
           </p>
         </div>
-        <button className="btn btn-outline-primary btn-sm" onClick={loadMedicos}>
-          Recargar
-        </button>
+        <div className="d-flex gap-2">
+          <input
+            className="form-control form-control-sm"
+            style={{ minWidth: "200px" }}
+            placeholder="Buscar por nombre o matrícula"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+          />
+          <button className="btn btn-outline-primary btn-sm" onClick={loadMedicos}>
+            Recargar
+          </button>
+        </div>
       </div>
 
       <div className="card-body p-0">
@@ -58,13 +80,13 @@ export default function MedicosTabla({ reloadKey, onEdit }) {
           </p>
         )}
 
-        {!loading && !error && medicos.length === 0 && (
+        {!loading && !error && filtered.length === 0 && (
           <p className="text-center text-muted py-4 mb-0">
-            No hay médicos cargados.
+            No hay médicos que coincidan.
           </p>
         )}
 
-        {!loading && !error && medicos.length > 0 && (
+        {!loading && !error && filtered.length > 0 && (
           <div className="table-responsive">
             <table className="table table-hover table-striped align-middle mb-0">
               <thead className="table-light">
@@ -78,7 +100,7 @@ export default function MedicosTabla({ reloadKey, onEdit }) {
               </thead>
 
               <tbody>
-                {medicos.map((m) => (
+                {filtered.map((m) => (
                   <tr key={m.id} className="text-center">
                     <td>{m.nombre}</td>
                     <td>{m.apellido}</td>

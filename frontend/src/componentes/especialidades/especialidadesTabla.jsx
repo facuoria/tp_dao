@@ -1,10 +1,11 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { API_BASE } from "../../api.js";
 
 export default function EspecialidadesTabla({ reloadKey }) {
   const [lista, setLista] = useState([]);
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState(null);
+  const [query, setQuery] = useState("");
 
   const loadData = () => {
     setLoading(true);
@@ -34,6 +35,12 @@ export default function EspecialidadesTabla({ reloadKey }) {
       .catch(() => alert("Error de conexión"));
   };
 
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return lista;
+    return lista.filter((e) => e.nombre?.toLowerCase().includes(q));
+  }, [lista, query]);
+
   return (
     <div
       className="card shadow-lg border-0 rounded-4 mt-4 w-100"
@@ -47,12 +54,21 @@ export default function EspecialidadesTabla({ reloadKey }) {
           </p>
         </div>
 
-        <button
-          className="btn btn-outline-primary btn-sm"
-          onClick={loadData}
-        >
-          Recargar
-        </button>
+        <div className="d-flex gap-2">
+          <input
+            className="form-control form-control-sm"
+            style={{ minWidth: "180px" }}
+            placeholder="Buscar por nombre"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+          />
+          <button
+            className="btn btn-outline-primary btn-sm"
+            onClick={loadData}
+          >
+            Recargar
+          </button>
+        </div>
       </div>
 
       <div className="card-body p-0">
@@ -64,13 +80,13 @@ export default function EspecialidadesTabla({ reloadKey }) {
           <p className="text-center text-danger py-4">{err}</p>
         )}
 
-        {!loading && !err && lista.length === 0 && (
+        {!loading && !err && filtered.length === 0 && (
           <p className="text-center text-muted py-4">
-            No hay especialidades cargadas.
+            No hay especialidades que coincidan.
           </p>
         )}
 
-        {!loading && !err && lista.length > 0 && (
+        {!loading && !err && filtered.length > 0 && (
           <div className="table-responsive">
             <table className="table table-hover table-striped text-center align-middle mb-0">
               <thead className="table-light">
@@ -81,7 +97,7 @@ export default function EspecialidadesTabla({ reloadKey }) {
               </thead>
 
               <tbody>
-                {lista.map((e) => (
+                {filtered.map((e) => (
                   <tr key={e.id}>
                     <td className="fw-semibold">{e.nombre}</td>
                     <td className="d-flex justify-content-center">
