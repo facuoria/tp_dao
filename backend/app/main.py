@@ -2,9 +2,10 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse
 
-from app.api import agendas, especialidades, medicos, pacientes, recetas, turnos
+from app.api import agendas, especialidades, medicos, pacientes, recetas, turnos, reportes
 
 app = FastAPI(title="API TURNOS MEDICOS")
+
 
 app.add_middleware(
     CORSMiddleware,
@@ -30,3 +31,4 @@ app.include_router(especialidades.router)
 app.include_router(agendas.router)
 app.include_router(turnos.router)
 app.include_router(recetas.router)
+app.include_router(reportes.router)
