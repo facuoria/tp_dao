@@ -1,10 +1,11 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { API_BASE } from "../../api.js";
 
 export default function TurnosTabla({ reloadKey, onEdit }) {
   const [turnos, setTurnos] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [query, setQuery] = useState("");
 
   const loadTurnos = () => {
     setLoading(true);
@@ -48,6 +49,17 @@ export default function TurnosTabla({ reloadKey, onEdit }) {
     });
   };
 
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return turnos;
+    return turnos.filter((t) => {
+      const paciente = `${t.paciente_apellido || ""} ${t.paciente_nombre || ""}`.toLowerCase();
+      const medico = `${t.medico_apellido || ""} ${t.medico_nombre || ""}`.toLowerCase();
+      const estado = (t.estado || "").toLowerCase();
+      return paciente.includes(q) || medico.includes(q) || estado.includes(q);
+    });
+  }, [turnos, query]);
+
   return (
     <div className="card shadow-lg border-0 rounded-4 mt-4 w-100" style={{ maxWidth: "900px" }}>
 
@@ -57,9 +69,18 @@ export default function TurnosTabla({ reloadKey, onEdit }) {
           <p className="text-muted small">Listado de turnos cargados.</p>
         </div>
 
-        <button className="btn btn-outline-primary btn-sm" onClick={loadTurnos}>
-          Recargar
-        </button>
+        <div className="d-flex gap-2">
+          <input
+            className="form-control form-control-sm"
+            style={{ minWidth: "220px" }}
+            placeholder="Buscar por paciente, médico o estado"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+          />
+          <button className="btn btn-outline-primary btn-sm" onClick={loadTurnos}>
+            Recargar
+          </button>
+        </div>
       </div>
 
       <div className="card-body p-0">
@@ -71,11 +92,11 @@ export default function TurnosTabla({ reloadKey, onEdit }) {
           <p className="text-center text-danger py-4 mb-0">{error}</p>
         )}
 
-        {!loading && !error && turnos.length === 0 && (
+        {!loading && !error && filtered.length === 0 && (
           <p className="text-center text-muted py-4 mb-0">No hay turnos cargados.</p>
         )}
 
-        {!loading && !error && turnos.length > 0 && (
+        {!loading && !error && filtered.length > 0 && (
           <div className="table-responsive">
             <table className="table table-hover table-striped align-middle mb-0">
 
@@ -93,7 +114,7 @@ export default function TurnosTabla({ reloadKey, onEdit }) {
               </thead>
 
               <tbody>
-                {turnos.map(t => (
+                {filtered.map(t => (
                   <tr key={t.id} className="text-center">
 
                     <td>{t.paciente_apellido}, {t.paciente_nombre}</td>

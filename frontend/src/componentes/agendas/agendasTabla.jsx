@@ -1,9 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { API_BASE } from "../../api";
 
 export default function AgendasTabla({ reloadKey }) {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [query, setQuery] = useState("");
 
   const loadAgenda = () => {
     setLoading(true);
@@ -25,6 +26,16 @@ export default function AgendasTabla({ reloadKey }) {
   };
   const DIAS = ["Lunes","Martes","Miércoles","Jueves","Viernes","Sábado","Domingo"];
 
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return items;
+    return items.filter((a) => {
+      const medico = `${a.medico_nombre || ""} ${a.medico_apellido || ""}`.toLowerCase();
+      const dia = DIAS[a.dia_semana]?.toLowerCase() || "";
+      return medico.includes(q) || dia.includes(q);
+    });
+  }, [items, query]);
+
   return (
     <div
       className="card shadow-lg border-0 rounded-4 mt-4 mx-auto"
@@ -32,9 +43,18 @@ export default function AgendasTabla({ reloadKey }) {
     >
       <div className="card-header bg-white border-0 pt-4 pb-2 d-flex justify-content-between">
         <h2 className="h5 fw-bold mb-1">Agenda cargada</h2>
-        <button className="btn btn-outline-primary btn-sm" onClick={loadAgenda}>
-          Recargar
-        </button>
+        <div className="d-flex gap-2">
+          <input
+            className="form-control form-control-sm"
+            style={{ minWidth: "200px" }}
+            placeholder="Buscar por médico o día"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+          />
+          <button className="btn btn-outline-primary btn-sm" onClick={loadAgenda}>
+            Recargar
+          </button>
+        </div>
       </div>
 
       <div className="card-body p-0">
@@ -44,13 +64,13 @@ export default function AgendasTabla({ reloadKey }) {
           </p>
         )}
 
-        {!loading && items.length === 0 && (
+        {!loading && filtered.length === 0 && (
           <p className="text-center text-muted py-4 mb-0">
-            No hay franjas cargadas.
+            No hay franjas que coincidan.
           </p>
         )}
 
-        {!loading && items.length > 0 && (
+        {!loading && filtered.length > 0 && (
           <div className="table-responsive">
             <table className="table table-hover table-striped">
               <thead className="table-light">
@@ -65,7 +85,7 @@ export default function AgendasTabla({ reloadKey }) {
               </thead>
 
               <tbody>
-                {items.map((a) => (
+                {filtered.map((a) => (
                   <tr key={a.id} className="text-center">
                     <td>{a.medico_nombre} {a.medico_apellido}</td>  
                     <td>{DIAS[a.dia_semana]}</td>

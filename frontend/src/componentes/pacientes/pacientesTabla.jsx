@@ -1,11 +1,12 @@
 // src/components/PacienteTable.jsx
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { API_BASE } from "../../api.js";
 
 function PacienteTable({ reloadKey, onEdit }) {
   const [pacientes, setPacientes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [query, setQuery] = useState("");
 
   async function loadPacientes() {
     setLoading(true);
@@ -46,6 +47,18 @@ function PacienteTable({ reloadKey, onEdit }) {
     loadPacientes();
   }, [reloadKey]);
 
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return pacientes;
+    return pacientes.filter((p) => {
+      return (
+        p.dni?.toString().includes(q) ||
+        p.nombre?.toLowerCase().includes(q) ||
+        p.apellido?.toLowerCase().includes(q)
+      );
+    });
+  }, [pacientes, query]);
+
   return (
   <div className="card shadow-lg border-0 rounded-4 mt-4 w-100">
     <div className="card-header bg-white border-0 pt-4 pb-2 d-flex justify-content-between align-items-center rounded-top-4">
@@ -56,13 +69,22 @@ function PacienteTable({ reloadKey, onEdit }) {
         </p>
       </div>
 
-      <button
-        type="button"
-        className="btn btn-outline-primary btn-sm px-3 rounded-3"
-        onClick={loadPacientes}
-      >
-        Recargar
-      </button>
+      <div className="d-flex gap-2">
+        <input
+          className="form-control form-control-sm"
+          style={{ minWidth: "180px" }}
+          placeholder="Buscar por DNI o nombre"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+        />
+        <button
+          type="button"
+          className="btn btn-outline-primary btn-sm px-3 rounded-3"
+          onClick={loadPacientes}
+        >
+          Recargar
+        </button>
+      </div>
     </div>
 
     <div className="card-body p-0">
@@ -79,13 +101,13 @@ function PacienteTable({ reloadKey, onEdit }) {
         </div>
       )}
 
-      {!loading && !error && pacientes.length === 0 && (
+      {!loading && !error && filtered.length === 0 && (
         <div className="py-4 text-center text-muted">
-          No hay pacientes cargados.
+          No hay pacientes que coincidan.
         </div>
       )}
 
-      {!loading && !error && pacientes.length > 0 && (
+      {!loading && !error && filtered.length > 0 && (
         <div className="table-responsive">
           <table className="table table-hover table-striped align-middle mb-0">
             <thead className="table-light">
@@ -100,7 +122,7 @@ function PacienteTable({ reloadKey, onEdit }) {
             </thead>
 
             <tbody>
-              {pacientes.map((p) => (
+              {filtered.map((p) => (
                 <tr key={p.id} className="text-center">
                   <td>{p.dni}</td>
                   <td>{p.nombre}</td>
