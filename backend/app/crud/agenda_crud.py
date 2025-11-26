@@ -4,6 +4,29 @@ from mysql.connector import errorcode
 from app.core.database import get_connection
 
 
+def _find_overlap(conn, medico_id, dia_semana, hora_inicio, hora_fin, exclude_id=None):
+    """Return one overlapping row (if any) for the given doctor/day/time window."""
+    sql = """
+        SELECT
+            id,
+            DATE_FORMAT(hora_inicio, '%H:%i') AS hora_inicio,
+            DATE_FORMAT(hora_fin, '%H:%i') AS hora_fin
+        FROM agenda_medico
+        WHERE medicos_id = %s
+          AND dia_semana = %s
+          AND %s < hora_fin     -- new start is before existing end
+          AND %s > hora_inicio  -- new end is after existing start
+    """
+    params = [medico_id, dia_semana, hora_fin, hora_inicio]
+    if exclude_id is not None:
+        sql += " AND id <> %s"
+        params.append(exclude_id)
+
+    with conn.cursor(dictionary=True) as cur:
+        cur.execute(sql, tuple(params))
+        return cur.fetchone()
+
+
 def list_agenda(medico_id=None):
     if medico_id:
         sql = """
@@ -56,6 +79,12 @@ def create_agenda(medico_id, dia_semana, hora_inicio, hora_fin, duracion_min):
     cur = None
     try:
         conn = get_connection()
+        overlap = _find_overlap(conn, medico_id, dia_semana, hora_inicio, hora_fin)
+        if overlap:
+            raise ValueError(
+                f"El medico ya tiene una franja de {overlap['hora_inicio']} a {overlap['hora_fin']} en ese dia"
+            )
+
         cur = conn.cursor()
         cur.execute(sql, params)
         conn.commit()
@@ -113,6 +142,12 @@ def update_agenda(agenda_id: int, medico_id, dia_semana, hora_inicio, hora_fin, 
     cur = None
     try:
         conn = get_connection()
+        overlap = _find_overlap(conn, medico_id, dia_semana, hora_inicio, hora_fin, exclude_id=agenda_id)
+        if overlap:
+            raise ValueError(
+                f"El medico ya tiene una franja de {overlap['hora_inicio']} a {overlap['hora_fin']} en ese dia"
+            )
+
         cur = conn.cursor()
         cur.execute(sql, params)
         conn.commit()
