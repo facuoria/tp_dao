@@ -5,3 +5,4 @@ pydantic-settings
 python-dotenv
 email-validator
 mysql-connector-python
+fastapi-mail
