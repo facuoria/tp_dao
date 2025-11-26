@@ -6,12 +6,13 @@ frontend/dist/
 frontend/.turbo/
 frontend/.vercel/
 
-# Backend (Python) - si lo agregás
+# Backend (Python)
 backend/venv/
 backend/.venv/
 backend/__pycache__/
 backend/*.pyc
 backend/.pytest_cache/
+backend/app/__pycache__/
 
 # Logs & caches
 *.log
@@ -22,6 +23,6 @@ coverage/
 .DS_Store
 Thumbs.db
 
-# Env reales (dejá solo .env.example en cada carpeta)
+# Env reales
 frontend/.env*
 backend/.env*
