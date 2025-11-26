@@ -22,6 +22,24 @@ def list_pacientes():
         return cur.fetchall()
 
 
+def get_paciente_by_id(paciente_id: int):
+    sql = """
+    SELECT 
+        id, 
+        dni, 
+        nombre, 
+        apellido, 
+        mail,
+        telefono,
+        fecha_nacimiento
+    FROM pacientes 
+    WHERE id = %s
+    """
+    with get_connection() as conn, conn.cursor(dictionary=True) as cur:
+        cur.execute(sql, (paciente_id,))
+        return cur.fetchone()
+
+
 def create_paciente(dni, nombre, apellido, mail, telefono, fecha_nacimiento):
     sql = """
     INSERT INTO pacientes (dni, nombre, apellido, mail, telefono, fecha_nacimiento)

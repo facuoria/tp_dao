@@ -1,9 +1,10 @@
 import mysql.connector
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, BackgroundTasks
 
 from app.crud.paciente_crud import create_paciente, delete_paciente, list_pacientes, update_paciente
 from app.schemas.paciente_schema import PacienteCreate, PacienteUpdate
 from app.utils.validators import require_int
+from app.core.email import email_service
 
 router = APIRouter(prefix="/api/pacientes", tags=["Pacientes"])
 
@@ -14,7 +15,7 @@ def listar_pacientes():
 
 
 @router.post("", status_code=201)
-def crear_paciente_api(body: PacienteCreate):
+def crear_paciente_api(body: PacienteCreate, background_tasks: BackgroundTasks):
     dni = require_int(body.dni, "dni", "Falta el campo obligatorio: dni", "El DNI debe ser numerico")
     fecha_nacimiento = body.fecha_nacimiento if body.fecha_nacimiento else None
 
@@ -27,6 +28,7 @@ def crear_paciente_api(body: PacienteCreate):
             body.telefono,
             fecha_nacimiento,
         )
+        background_tasks.add_task(email_service.send_welcome_email, body.mail, body.nombre)
         return {"id": new_id}
     except ValueError as ve:
         raise HTTPException(status_code=400, detail=str(ve))

@@ -6,3 +6,4 @@ python-dotenv
 email-validator
 mysql-connector-python
 reportlab
+fastapi-mail
