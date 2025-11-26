@@ -1,12 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Pie } from "react-chartjs-2";
-import {
-  ArcElement,
-  Chart as ChartJS,
-  Legend,
-  Title,
-  Tooltip,
-} from "chart.js";
+import { ArcElement, Chart as ChartJS, Legend, Title, Tooltip } from "chart.js";
+import { downloadReportPdf } from "./downloadReportPdf";
 import { API_BASE } from "../../api";
 
 ChartJS.register(ArcElement, Tooltip, Legend, Title);
@@ -84,6 +79,8 @@ const AsistenciasInasistenciasTab = () => {
   });
   const [selectedCategory, setSelectedCategory] = useState(null);
   const chartRef = useRef(null);
+  const reportRef = useRef(null);
+  const [downloading, setDownloading] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -171,6 +168,23 @@ const AsistenciasInasistenciasTab = () => {
   };
 
   const selectedTurnos = selectedCategory ? categories[selectedCategory] : [];
+  const handleDownload = async () => {
+    if (!reportRef.current || filteredTurnos.length === 0) return;
+    setDownloading(true);
+    try {
+      const selectedLabel = selectedCategory ? CATEGORY_CONFIG[selectedCategory].label : "Asistencias e inasistencias";
+      await downloadReportPdf({
+        element: reportRef.current,
+        fileName: `asistencias-inasistencias-${filters.desde}-${filters.hasta}`,
+        title: "Asistencias vs inasistencias",
+        subtitle: `${selectedLabel} | Periodo: ${filters.desde} - ${filters.hasta}`,
+      });
+    } catch (err) {
+      console.error("No se pudo descargar el reporte de asistencias", err);
+    } finally {
+      setDownloading(false);
+    }
+  };
 
   return (
     <div>
@@ -226,118 +240,116 @@ const AsistenciasInasistenciasTab = () => {
             </div>
           ) : (
             <>
-              <div className="row g-4">
-                <div className="col-12 col-lg-6">
-                  <div className="card border-0 shadow-sm h-100">
-                    <div className="card-body d-flex flex-column">
-                      <div className="mb-3">
-                        <p className="text-muted small mb-1">Clicks interactivos</p>
-                        <p className="mb-0">
-                          Tocá un segmento para mostrar los turnos que corresponden a esa categoría.
-                        </p>
-                      </div>
-                      <div className="flex-grow-1 d-flex align-items-center justify-content-center" style={{ minHeight: 280 }}>
-                        <Pie ref={chartRef} data={pieData} options={chartOptions} onClick={handlePieClick} />
-                      </div>
-                    </div>
-                  </div>
+              <div className="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+                <div>
+                  <h5 className="mb-1">Reporte de asistencias vs inasistencias</h5>
+                  <p className="text-muted small mb-0">Incluye grafico, resumen y tabla visibles.</p>
                 </div>
-
-                <div className="col-12 col-lg-6">
-                  <div className="card border-0 shadow-sm h-100">
-                    <div className="card-body">
-                      <p className="text-uppercase text-muted fw-semibold small mb-2">Resumen</p>
-                      <ul className="list-unstyled mb-3">
-                        {Object.entries(CATEGORY_CONFIG).map(([key, config]) => {
-                          const total = categories[key].length;
-                          const overall = categories.asistencias.length + categories.inasistencias.length || 1;
-                          const pct = Math.round((total / overall) * 100);
-                          return (
-                            <li key={key} className="d-flex justify-content-between align-items-center py-2 border-bottom">
-                              <span className="fw-semibold">{config.label}</span>
-                              <span>
-                                <span className="badge text-bg-light me-2">{pct}%</span>
-                                {total} turno{total === 1 ? "" : "s"}
-                              </span>
-                            </li>
-                          );
-                        })}
-                      </ul>
-                      <div className="alert alert-secondary mb-0" role="alert">
-                        Seleccion actual:{" "}
-                        {selectedCategory ? CATEGORY_CONFIG[selectedCategory].label : "ninguna (muestra ambos estados)"}
-                      </div>
-                    </div>
-                  </div>
-                </div>
+                <button className="btn btn-outline-primary" onClick={handleDownload} disabled={downloading}>
+                  {downloading ? "Generando PDF..." : "Descargar PDF"}
+                </button>
               </div>
 
-              <div className="mt-4">
-                <button
-                  className="btn btn-outline-primary"
-                  onClick={() => {
-                    window.open(
-                      `${API_BASE}/api/reportes/asistencias-inasistencias/pdf?desde=${filters.desde}&hasta=${filters.hasta}`,
-                      "_blank"
-                    );
-                  }}
-                >
-                  Descargar PDF
-                </button>
+              <div ref={reportRef}>
+                <div className="row g-4">
+                  <div className="col-12 col-lg-6">
+                    <div className="card border-0 shadow-sm h-100">
+                      <div className="card-body d-flex flex-column">
+                        <div className="mb-3">
+                          <p className="text-muted small mb-1">Clicks interactivos</p>
+                          <p className="mb-0">Toca un segmento para mostrar los turnos que corresponden a esa categoria.</p>
+                        </div>
+                        <div className="flex-grow-1 d-flex align-items-center justify-content-center" style={{ minHeight: 280 }}>
+                          <Pie ref={chartRef} data={pieData} options={chartOptions} onClick={handlePieClick} />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
 
-                <div className="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
-                  <div>
-                    <h5 className="mb-0">Turnos</h5>
-                    <p className="text-muted small mb-0">
-                      {selectedCategory
-                        ? `Mostrando ${CATEGORY_CONFIG[selectedCategory].label.toLowerCase()} registradas`
-                        : "Mostrando todas las asistencias e inasistencias del periodo"}
-                    </p>
+                  <div className="col-12 col-lg-6">
+                    <div className="card border-0 shadow-sm h-100">
+                      <div className="card-body">
+                        <p className="text-uppercase text-muted fw-semibold small mb-2">Resumen</p>
+                        <ul className="list-unstyled mb-3">
+                          {Object.entries(CATEGORY_CONFIG).map(([key, config]) => {
+                            const total = categories[key].length;
+                            const overall = categories.asistencias.length + categories.inasistencias.length || 1;
+                            const pct = Math.round((total / overall) * 100);
+                            return (
+                              <li key={key} className="d-flex justify-content-between align-items-center py-2 border-bottom">
+                                <span className="fw-semibold">{config.label}</span>
+                                <span>
+                                  <span className="badge text-bg-light me-2">{pct}%</span>
+                                  {total} turno{total === 1 ? "" : "s"}
+                                </span>
+                              </li>
+                            );
+                          })}
+                        </ul>
+                        <div className="alert alert-secondary mb-0" role="alert">
+                          Seleccion actual:{" "}
+                          {selectedCategory ? CATEGORY_CONFIG[selectedCategory].label : "ninguna (muestra ambos estados)"}
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
-                {selectedCategory && selectedTurnos.length === 0 ? (
-                  <p className="text-muted mb-0">{CATEGORY_CONFIG[selectedCategory].emptyMessage}</p>
-                ) : (
-                  <div className="table-responsive">
-                    <table className="table table-hover align-middle mb-0">
-                      <thead>
-                        <tr>
-                          <th scope="col">Paciente</th>
-                          <th scope="col">Medico</th>
-                          <th scope="col">Fecha</th>
-                          <th scope="col">Estado</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {(selectedCategory ? selectedTurnos : filteredTurnos).map(turno => (
-                          <tr key={turno.id}>
-                            <td>
-                              {turno.paciente_apellido}, {turno.paciente_nombre}
-                              <div className="small text-muted">DNI {turno.paciente_dni}</div>
-                            </td>
-                            <td>
-                              {turno.medico_apellido}, {turno.medico_nombre}
-                              <div className="small text-muted">{turno.especialidad_nombre}</div>
-                            </td>
-                            <td>{formatDate(turno.inicio)}</td>
-                            <td>
-                              <span
-                                className={`badge ${
-                                  turno.estado?.toLowerCase() === "atendido"
-                                    ? "bg-success-subtle text-success"
-                                    : "bg-danger-subtle text-danger"
-                                }`}
-                              >
-                                {turno.estado}
-                              </span>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                <div className="mt-4">
+                  <div className="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+                    <div>
+                      <h5 className="mb-0">Turnos</h5>
+                      <p className="text-muted small mb-0">
+                        {selectedCategory
+                          ? `Mostrando ${CATEGORY_CONFIG[selectedCategory].label.toLowerCase()} registradas`
+                          : "Mostrando todas las asistencias e inasistencias del periodo"}
+                      </p>
+                    </div>
                   </div>
-                )}
+
+                  {selectedCategory && selectedTurnos.length === 0 ? (
+                    <p className="text-muted mb-0">{CATEGORY_CONFIG[selectedCategory].emptyMessage}</p>
+                  ) : (
+                    <div className="table-responsive">
+                      <table className="table table-hover align-middle mb-0">
+                        <thead>
+                          <tr>
+                            <th scope="col">Paciente</th>
+                            <th scope="col">Medico</th>
+                            <th scope="col">Fecha</th>
+                            <th scope="col">Estado</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {(selectedCategory ? selectedTurnos : filteredTurnos).map(turno => (
+                            <tr key={turno.id}>
+                              <td>
+                                {turno.paciente_apellido}, {turno.paciente_nombre}
+                                <div className="small text-muted">DNI {turno.paciente_dni}</div>
+                              </td>
+                              <td>
+                                {turno.medico_apellido}, {turno.medico_nombre}
+                                <div className="small text-muted">{turno.especialidad_nombre}</div>
+                              </td>
+                              <td>{formatDate(turno.inicio)}</td>
+                              <td>
+                                <span
+                                  className={`badge ${
+                                    turno.estado?.toLowerCase() === "atendido"
+                                      ? "bg-success-subtle text-success"
+                                      : "bg-danger-subtle text-danger"
+                                  }`}
+                                >
+                                  {turno.estado}
+                                </span>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
               </div>
             </>
           )}

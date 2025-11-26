@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Bar } from "react-chartjs-2";
 import {
   BarElement,
@@ -10,6 +10,7 @@ import {
   Tooltip,
 } from "chart.js";
 import { API_BASE } from "../../api";
+import { downloadReportPdf } from "./downloadReportPdf";
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip, Legend, Title);
 
@@ -57,6 +58,8 @@ const PacientesAtendidosTab = () => {
     desde: defaultDesde,
     hasta: defaultHasta,
   });
+  const [downloading, setDownloading] = useState(false);
+  const reportRef = useRef(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -141,6 +144,23 @@ const PacientesAtendidosTab = () => {
     };
   }, [filteredTurnos]);
 
+  const handleDownload = async () => {
+    if (!reportRef.current || patientsData.chartEntries.length === 0) return;
+    setDownloading(true);
+    try {
+      await downloadReportPdf({
+        element: reportRef.current,
+        fileName: `pacientes-atendidos-${filters.desde || "sin-desde"}-${filters.hasta || "sin-hasta"}`,
+        title: "Pacientes atendidos",
+        subtitle: `Periodo: ${filters.desde} - ${filters.hasta} | Pacientes: ${patientsData.chartEntries.length} | Turnos atendidos: ${filteredTurnos.length}`,
+      });
+    } catch (err) {
+      console.error("No se pudo descargar el reporte de pacientes", err);
+    } finally {
+      setDownloading(false);
+    }
+  };
+
   return (
     <div>
       <div className="row g-3">
@@ -195,47 +215,59 @@ const PacientesAtendidosTab = () => {
             </div>
           ) : (
             <>
-              <div className="row g-4">
-                <div className="col-12">
-                  <div className="card border-0 shadow-sm">
-                    <div className="card-body">
-                      <div style={{ minHeight: 320 }}>
-                        <Bar data={timelineData} options={chartOptions} />
+              <div className="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+                <div>
+                  <h5 className="mb-1">Reporte de pacientes atendidos</h5>
+                  <p className="text-muted small mb-0">Incluye el grafico y la tabla visibles en pantalla.</p>
+                </div>
+                <button className="btn btn-outline-primary" onClick={handleDownload} disabled={downloading}>
+                  {downloading ? "Generando PDF..." : "Descargar PDF"}
+                </button>
+              </div>
+
+              <div ref={reportRef}>
+                <div className="row g-4">
+                  <div className="col-12">
+                    <div className="card border-0 shadow-sm">
+                      <div className="card-body">
+                        <div style={{ minHeight: 320 }}>
+                          <Bar data={timelineData} options={chartOptions} />
+                        </div>
                       </div>
                     </div>
                   </div>
                 </div>
-              </div>
 
-              <div className="mt-4">
-                <div className="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
-                  <div>
-                    <h5 className="mb-0">Pacientes atendidos</h5>
-                    <p className="text-muted small mb-0">
-                      {patientsData.chartEntries.length} paciente
-                      {patientsData.chartEntries.length === 1 ? "" : "s"} recibieron atencion en el periodo.
-                    </p>
+                <div className="mt-4">
+                  <div className="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+                    <div>
+                      <h5 className="mb-0">Pacientes atendidos</h5>
+                      <p className="text-muted small mb-0">
+                        {patientsData.chartEntries.length} paciente
+                        {patientsData.chartEntries.length === 1 ? "" : "s"} recibieron atencion en el periodo.
+                      </p>
+                    </div>
                   </div>
-                </div>
-                <div className="table-responsive">
-                  <table className="table table-hover align-middle mb-0">
-                    <thead>
-                      <tr>
-                        <th scope="col">Paciente</th>
-                        <th scope="col">Cantidad de turnos</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {patientsData.chartEntries.map(([paciente, cantidad]) => (
-                        <tr key={paciente}>
-                          <td>{paciente}</td>
-                          <td>
-                            <span className="badge bg-primary-subtle text-primary">{cantidad}</span>
-                          </td>
+                  <div className="table-responsive">
+                    <table className="table table-hover align-middle mb-0">
+                      <thead>
+                        <tr>
+                          <th scope="col">Paciente</th>
+                          <th scope="col">Cantidad de turnos</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                      </thead>
+                      <tbody>
+                        {patientsData.chartEntries.map(([paciente, cantidad]) => (
+                          <tr key={paciente}>
+                            <td>{paciente}</td>
+                            <td>
+                              <span className="badge bg-primary-subtle text-primary">{cantidad}</span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
               </div>
             </>

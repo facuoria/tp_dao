@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Bar } from "react-chartjs-2";
 import {
   BarElement,
@@ -10,6 +10,7 @@ import {
   Tooltip,
 } from "chart.js";
 import { API_BASE } from "../../api";
+import { downloadReportPdf } from "./downloadReportPdf";
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip, Legend, Title);
 
@@ -52,6 +53,8 @@ const TurnosPorEspecialidadTab = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [especialidadId, setEspecialidadId] = useState("");
+  const [downloading, setDownloading] = useState(false);
+  const reportRef = useRef(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -136,6 +139,24 @@ const TurnosPorEspecialidadTab = () => {
 
   const selectedEspecialidad = especialidades.find(esp => String(esp.id) === especialidadId);
   const totalTurnos = filteredTurnos.length;
+  const handleDownload = async () => {
+    if (!especialidadId || !reportRef.current) return;
+    setDownloading(true);
+    try {
+      await downloadReportPdf({
+        element: reportRef.current,
+        fileName: `turnos-especialidad-${selectedEspecialidad?.nombre || "sin-especialidad"}`,
+        title: "Turnos por especialidad",
+        subtitle: selectedEspecialidad
+          ? `Especialidad: ${selectedEspecialidad.nombre} | Total de turnos: ${totalTurnos}`
+          : undefined,
+      });
+    } catch (err) {
+      console.error("Error al descargar el PDF", err);
+    } finally {
+      setDownloading(false);
+    }
+  };
 
   return (
     <div>
@@ -181,57 +202,75 @@ const TurnosPorEspecialidadTab = () => {
             </div>
           ) : (
             <>
-              <div className="row g-4">
-                <div className="col-12 col-lg-7">
-                  <div className="card border-0 shadow-sm h-100">
-                    <div className="card-body">
-                      {chartData.labels.length === 0 ? (
-                        <p className="text-muted mb-0">No se registran turnos para la especialidad indicada.</p>
-                      ) : (
-                        <div style={{ minHeight: 320 }}>
-                          <Bar data={chartData} options={chartOptions} />
-                        </div>
-                      )}
+              <div className="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+                <div>
+                  <h5 className="mb-1">Reporte por especialidad</h5>
+                  <p className="text-muted small mb-0">
+                    Incluye el grafico y el resumen visible para la especialidad seleccionada.
+                  </p>
+                </div>
+                <button
+                  className="btn btn-outline-primary"
+                  onClick={handleDownload}
+                  disabled={downloading || chartData.labels.length === 0}
+                >
+                  {downloading ? "Generando PDF..." : "Descargar PDF"}
+                </button>
+              </div>
+
+              <div ref={reportRef}>
+                <div className="row g-4">
+                  <div className="col-12 col-lg-7">
+                    <div className="card border-0 shadow-sm h-100">
+                      <div className="card-body">
+                        {chartData.labels.length === 0 ? (
+                          <p className="text-muted mb-0">No se registran turnos para la especialidad indicada.</p>
+                        ) : (
+                          <div style={{ minHeight: 320 }}>
+                            <Bar data={chartData} options={chartOptions} />
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                <div className="col-12 col-lg-5">
-                  <div className="card border-0 shadow-sm h-100">
-                    <div className="card-body">
-                      <p className="text-uppercase text-muted fw-semibold small mb-2">Resumen</p>
-                      <h5 className="mb-2">
-                        {selectedEspecialidad ? selectedEspecialidad.nombre : "Especialidad sin nombre"}
-                      </h5>
-                      <p className="text-muted mb-4">
-                        Turnos contabilizados en todos los estados para la especialidad seleccionada.
-                      </p>
-                      <div className="border rounded-4 p-3 mb-3 bg-light">
-                        <p className="text-muted mb-1 small">Total de turnos</p>
-                        <p className="display-6 fw-bold mb-0">{totalTurnos}</p>
+                  <div className="col-12 col-lg-5">
+                    <div className="card border-0 shadow-sm h-100">
+                      <div className="card-body">
+                        <p className="text-uppercase text-muted fw-semibold small mb-2">Resumen</p>
+                        <h5 className="mb-2">
+                          {selectedEspecialidad ? selectedEspecialidad.nombre : "Especialidad sin nombre"}
+                        </h5>
+                        <p className="text-muted mb-4">
+                          Turnos contabilizados en todos los estados para la especialidad seleccionada.
+                        </p>
+                        <div className="border rounded-4 p-3 mb-3 bg-light">
+                          <p className="text-muted mb-1 small">Total de turnos</p>
+                          <p className="display-6 fw-bold mb-0">{totalTurnos}</p>
+                        </div>
+                        <ul className="list-unstyled mb-0">
+                          {Object.entries(statusCounts).map(([estado, cantidad], idx) => (
+                            <li key={estado} className="d-flex align-items-center justify-content-between py-2 border-bottom">
+                              <div className="d-flex align-items-center gap-2">
+                                <span
+                                  style={{
+                                    display: "inline-block",
+                                    width: "12px",
+                                    height: "12px",
+                                    borderRadius: "999px",
+                                    backgroundColor: palette[idx % palette.length].background,
+                                  }}
+                                ></span>
+                                <span className="fw-semibold">{estado}</span>
+                              </div>
+                              <span>{cantidad}</span>
+                            </li>
+                          ))}
+                          {Object.keys(statusCounts).length === 0 && (
+                            <li className="text-muted">Sin turnos registrados.</li>
+                          )}
+                        </ul>
                       </div>
-                      <ul className="list-unstyled mb-0">
-                        {Object.entries(statusCounts).map(([estado, cantidad], idx) => (
-                          <li key={estado} className="d-flex align-items-center justify-content-between py-2 border-bottom">
-                            <div className="d-flex align-items-center gap-2">
-                              <span
-                                style={{
-                                  display: "inline-block",
-                                  width: "12px",
-                                  height: "12px",
-                                  borderRadius: "999px",
-                                  backgroundColor: palette[idx % palette.length].background,
-                                }}
-                              ></span>
-                              <span className="fw-semibold">{estado}</span>
-                            </div>
-                            <span>{cantidad}</span>
-                          </li>
-                        ))}
-                        {Object.keys(statusCounts).length === 0 && (
-                          <li className="text-muted">Sin turnos registrados.</li>
-                        )}
-                      </ul>
                     </div>
                   </div>
                 </div>
