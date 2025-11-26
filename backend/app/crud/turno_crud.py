@@ -133,9 +133,11 @@ def crear_turno(paciente_id, medico_id, fecha_hora, duracion_min, estado_turno_i
 
 
 def eliminar_turno(turno_id: int) -> int:
+    # Permitimos borrar turnos cuyo estado sea 'cancelado_paciente' (id 3)
+    # o 'cancelado_medico' (id 2). Esto evita borrar turnos en otros estados.
     sql = """
         DELETE FROM turnos
-        WHERE id = %s AND estado_turno_id = 3
+        WHERE id = %s AND estado_turno_id IN (2, 3)
     """
     conn = None
     cur = None

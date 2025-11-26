@@ -76,7 +76,7 @@ def borrar_turno_api(turno_id: int):
     if borradas == 0:
         raise HTTPException(
             status_code=400,
-            detail="El turno no existe o no esta en estado 'Cancelado'.",
+            detail="El turno no existe o no está en estado 'cancelado_medico' o 'cancelado_paciente'.",
         )
 
     return
