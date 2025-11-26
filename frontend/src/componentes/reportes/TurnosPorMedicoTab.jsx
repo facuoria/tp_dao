@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Bar } from "react-chartjs-2";
 import {
   BarElement,
@@ -10,6 +10,7 @@ import {
   Tooltip,
 } from "chart.js";
 import { API_BASE } from "../../api";
+import { downloadReportPdf } from "./downloadReportPdf";
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip, Legend, Title);
 
@@ -87,6 +88,8 @@ const TurnosPorMedicoTab = () => {
     desde: defaultDesde,
     hasta: defaultHasta,
   });
+  const [downloading, setDownloading] = useState(false);
+  const reportRef = useRef(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -206,6 +209,23 @@ const TurnosPorMedicoTab = () => {
     };
   }, [filteredTurnos]);
 
+  const handleDownload = async () => {
+    if (!hasMedicoSelected || !reportRef.current) return;
+    setDownloading(true);
+    try {
+      await downloadReportPdf({
+        element: reportRef.current,
+        fileName: `turnos-medico-${selectedMedico?.apellido || "sin-medico"}`,
+        title: "Turnos atendidos por medico",
+        subtitle: `${selectedMedico ? `${selectedMedico.nombre} ${selectedMedico.apellido}` : "Sin medico"} | Periodo: ${formatInputDate(filters.desde)} - ${formatInputDate(filters.hasta)} | Total: ${filteredTurnos.length}`,
+      });
+    } catch (err) {
+      console.error("No se pudo generar el PDF", err);
+    } finally {
+      setDownloading(false);
+    }
+  };
+
   return (
     <div>
       <div className="row g-3">
@@ -283,93 +303,107 @@ const TurnosPorMedicoTab = () => {
 
           {hasMedicoSelected && (
             <>
-              <div className="row g-4">
-                <div className="col-12 col-lg-6">
-                  <div className="card border-0 shadow-sm h-100">
-                    <div className="card-body">
-                      <h6 className="text-uppercase text-muted fw-semibold mb-3">Distribucion</h6>
-                      {filteredTurnos.length === 0 ? (
-                        <p className="text-muted mb-0">No hay turnos atendidos para el periodo seleccionado.</p>
-                      ) : (
-                        <div style={{ minHeight: 320 }}>
-                          <Bar data={chartData} options={chartOptions} />
-                        </div>
-                      )}
+              <div className="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+                <div>
+                  <h5 className="mb-1">Reporte de turnos atendidos</h5>
+                  <p className="text-muted small mb-0">
+                    Incluye grafico, resumen y tabla visibles del medico seleccionado.
+                  </p>
+                </div>
+                <button className="btn btn-outline-primary" onClick={handleDownload} disabled={downloading}>
+                  {downloading ? "Generando PDF..." : "Descargar PDF"}
+                </button>
+              </div>
+
+              <div ref={reportRef}>
+                <div className="row g-4">
+                  <div className="col-12 col-lg-6">
+                    <div className="card border-0 shadow-sm h-100">
+                      <div className="card-body">
+                        <h6 className="text-uppercase text-muted fw-semibold mb-3">Distribucion</h6>
+                        {filteredTurnos.length === 0 ? (
+                          <p className="text-muted mb-0">No hay turnos atendidos para el periodo seleccionado.</p>
+                        ) : (
+                          <div style={{ minHeight: 320 }}>
+                            <Bar data={chartData} options={chartOptions} />
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                <div className="col-12 col-lg-6">
-                  <div className="card border-0 shadow-sm h-100">
-                    <div className="card-body d-flex flex-column">
-                      <h6 className="text-uppercase text-muted fw-semibold mb-3">Resumen</h6>
-                      <p className="mb-1">
-                        <span className="fw-semibold">Medico:</span>{" "}
-                        {selectedMedico
-                          ? `${selectedMedico.nombre} ${selectedMedico.apellido} (${selectedMedico.especialidades})`
-                          : "No disponible"}
-                      </p>
-                      <p className="mb-1">
-                        <span className="fw-semibold">Periodo:</span>{" "}
-                        {`${formatInputDate(filters.desde)} - ${formatInputDate(filters.hasta)}`}
-                      </p>
-                      <div className="mt-auto">
-                        <p className="text-muted mb-1">Total de turnos atendidos</p>
-                        <p className="display-5 fw-bold text-primary mb-0">{filteredTurnos.length}</p>
+                  <div className="col-12 col-lg-6">
+                    <div className="card border-0 shadow-sm h-100">
+                      <div className="card-body d-flex flex-column">
+                        <h6 className="text-uppercase text-muted fw-semibold mb-3">Resumen</h6>
+                        <p className="mb-1">
+                          <span className="fw-semibold">Medico:</span>{" "}
+                          {selectedMedico
+                            ? `${selectedMedico.nombre} ${selectedMedico.apellido} (${selectedMedico.especialidades})`
+                            : "No disponible"}
+                        </p>
+                        <p className="mb-1">
+                          <span className="fw-semibold">Periodo:</span>{" "}
+                          {`${formatInputDate(filters.desde)} - ${formatInputDate(filters.hasta)}`}
+                        </p>
+                        <div className="mt-auto">
+                          <p className="text-muted mb-1">Total de turnos atendidos</p>
+                          <p className="display-5 fw-bold text-primary mb-0">{filteredTurnos.length}</p>
+                        </div>
                       </div>
                     </div>
                   </div>
                 </div>
-              </div>
 
-              <div className="mt-4">
-                <div className="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
-                  <div>
-                    <h5 className="mb-0">Turnos atendidos</h5>
-                    <p className="text-muted mb-0 small">
-                      Mostrando {filteredTurnos.length} turno{filteredTurnos.length === 1 ? "" : "s"} atendido
-                      {filteredTurnos.length === 1 ? "" : "s"} por el medico seleccionado.
-                    </p>
+                <div className="mt-4">
+                  <div className="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+                    <div>
+                      <h5 className="mb-0">Turnos atendidos</h5>
+                      <p className="text-muted mb-0 small">
+                        Mostrando {filteredTurnos.length} turno{filteredTurnos.length === 1 ? "" : "s"} atendido
+                        {filteredTurnos.length === 1 ? "" : "s"} por el medico seleccionado.
+                      </p>
+                    </div>
                   </div>
-                </div>
 
-                {filteredTurnos.length === 0 ? (
-                  <p className="text-muted mb-0">No se encontraron turnos atendidos para los filtros indicados.</p>
-                ) : (
-                  <div className="table-responsive">
-                    <table className="table table-hover align-middle mb-0">
-                      <thead>
-                        <tr>
-                          <th scope="col">Paciente</th>
-                          <th scope="col">Fecha y hora</th>
-                          <th scope="col">Motivo</th>
-                          <th scope="col">Observaciones</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {filteredTurnos.map(turno => (
-                          <tr key={turno.id}>
-                            <td>
-                              <p className="fw-semibold mb-0">
-                                {turno.paciente_nombre} {turno.paciente_apellido}
-                              </p>
-                              <small className="text-muted">DNI {turno.paciente_dni}</small>
-                            </td>
-                            <td>
-                              <span className="badge bg-success-subtle text-success fw-semibold mb-1">
-                                Atendido
-                              </span>
-                              <div className="small text-muted">{formatDateTime(turno.inicio)}</div>
-                              <div className="small text-muted">Duracion: {turno.duracion ?? 0} min</div>
-                            </td>
-                            <td>{turno.motivo || "Sin motivo"}</td>
-                            <td>{turno.observaciones || "Sin datos"}</td>
+                  {filteredTurnos.length === 0 ? (
+                    <p className="text-muted mb-0">No se encontraron turnos atendidos para los filtros indicados.</p>
+                  ) : (
+                    <div className="table-responsive">
+                      <table className="table table-hover align-middle mb-0">
+                        <thead>
+                          <tr>
+                            <th scope="col">Paciente</th>
+                            <th scope="col">Fecha y hora</th>
+                            <th scope="col">Motivo</th>
+                            <th scope="col">Observaciones</th>
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
+                        </thead>
+                        <tbody>
+                          {filteredTurnos.map(turno => (
+                            <tr key={turno.id}>
+                              <td>
+                                <p className="fw-semibold mb-0">
+                                  {turno.paciente_nombre} {turno.paciente_apellido}
+                                </p>
+                                <small className="text-muted">DNI {turno.paciente_dni}</small>
+                              </td>
+                              <td>
+                                <span className="badge bg-success-subtle text-success fw-semibold mb-1">
+                                  Atendido
+                                </span>
+                                <div className="small text-muted">{formatDateTime(turno.inicio)}</div>
+                                <div className="small text-muted">Duracion: {turno.duracion ?? 0} min</div>
+                              </td>
+                              <td>{turno.motivo || "Sin motivo"}</td>
+                              <td>{turno.observaciones || "Sin datos"}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
               </div>
             </>
           )}
