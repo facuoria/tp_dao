@@ -39,6 +39,17 @@ const toMinutes = (t: string) => {
   const [hh = '0', mm = '0'] = t.split(':');
   return Number(hh) * 60 + Number(mm);
 };
+const findAgendaOverlap = (payload: { medico_id: ID; dia_semana: number; hora_inicio: string; hora_fin: string; }, excludeId?: ID) => {
+  const start = toMinutes(payload.hora_inicio);
+  const end = toMinutes(payload.hora_fin);
+  return agenda.find(a =>
+    a.id !== excludeId &&
+    a.medico_id === payload.medico_id &&
+    a.dia_semana === payload.dia_semana &&
+    start < toMinutes(normalizeTime(a.hora_fin)) &&
+    end > toMinutes(normalizeTime(a.hora_inicio))
+  );
+};
 
 function validateAgendaInput(input: { dia_semana: number; hora_inicio: string; hora_fin: string; duracion_min: number; }) {
   if (!Number.isInteger(input.dia_semana) || input.dia_semana < 0 || input.dia_semana > 6)
@@ -182,12 +193,13 @@ export const handlers = [
     };
     const error = validateAgendaInput(payload);
     if (error) return HttpResponse.json({ detail: error }, { status: 400 });
-    const dup = agenda.some(a =>
-      a.medico_id === medico_id &&
-      a.dia_semana === payload.dia_semana &&
-      normalizeTime(a.hora_inicio) === payload.hora_inicio
-    );
-    if (dup) return HttpResponse.json({ detail: 'Ya existe una franja en ese horario' }, { status: 409 });
+    const conflict = findAgendaOverlap(payload);
+    if (conflict) {
+      return HttpResponse.json(
+        { detail: `El m\u00e9dico ya tiene una franja de ${normalizeTime(conflict.hora_inicio)} a ${normalizeTime(conflict.hora_fin)}` },
+        { status: 409 },
+      );
+    }
     const row = { id: nextId(agenda), created_at: new Date().toISOString(), ...payload };
     agenda.push(row as any);
     return HttpResponse.json(row, { status: 201 });
@@ -213,13 +225,13 @@ export const handlers = [
     };
     const error = validateAgendaInput(payload);
     if (error) return HttpResponse.json({ detail: error }, { status: 400 });
-    const dup = agenda.some(a =>
-      a.id !== id &&
-      a.medico_id === payload.medico_id &&
-      a.dia_semana === payload.dia_semana &&
-      normalizeTime(a.hora_inicio) === payload.hora_inicio
-    );
-    if (dup) return HttpResponse.json({ detail: 'Ya existe una franja en ese horario' }, { status: 409 });
+    const conflict = findAgendaOverlap(payload, id);
+    if (conflict) {
+      return HttpResponse.json(
+        { detail: `El m\u00e9dico ya tiene una franja de ${normalizeTime(conflict.hora_inicio)} a ${normalizeTime(conflict.hora_fin)}` },
+        { status: 409 },
+      );
+    }
 
     agenda[idx] = payload as any;
     return HttpResponse.json(agenda[idx]);

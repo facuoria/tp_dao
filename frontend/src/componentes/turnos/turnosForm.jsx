@@ -10,7 +10,7 @@ export default function TurnosForm({ onSuccess, editingTurno, onCancelEdit }) {
     duracion_min: "30",
     estado_turno_id: "",
     motivo: "",
-    observaciones: ""
+    observaciones: "",
   };
 
   const isEdit = Boolean(editingTurno?.id);
@@ -25,7 +25,7 @@ export default function TurnosForm({ onSuccess, editingTurno, onCancelEdit }) {
   const [pacientes, setPacientes] = useState([]);
   const [medicos, setMedicos] = useState([]);
   const [estados, setEstados] = useState([]);
-  const [horarios, setHorarios] = useState([]);
+  const [horarios, setHorarios] = useState([]); // {hora, duracion}
   const [turnos, setTurnos] = useState([]);
   const [agenda, setAgenda] = useState([]);
   const hoy = new Date().toISOString().split("T")[0];
@@ -89,7 +89,7 @@ export default function TurnosForm({ onSuccess, editingTurno, onCancelEdit }) {
     for (let m = inicio; m <= fin; m += step) {
       const h = String(Math.floor(m / 60)).padStart(2, "0");
       const min = String(m % 60).padStart(2, "0");
-      arr.push(`${h}:${min}`);
+      arr.push({ hora: `${h}:${min}`, duracion: step });
     }
     return arr;
   };
@@ -98,12 +98,11 @@ export default function TurnosForm({ onSuccess, editingTurno, onCancelEdit }) {
     if (form.fecha && agenda.length > 0) {
       const dateObj = new Date(form.fecha);
       const weekday = dateObj.getDay(); // 0 = Sunday, 1 = Monday ...
-      const entry = agenda.find(a => a.dia_semana === weekday);
-      if (entry) {
-        setForm(prev => ({ ...prev, duracion_min: entry.duracion_min }));
-        const slots = generarHorarios(entry.hora_inicio, entry.hora_fin, entry.duracion_min);
+      const entries = agenda.filter(a => a.dia_semana === weekday);
+      if (entries.length) {
+        const slots = entries.flatMap(a => generarHorarios(a.hora_inicio, a.hora_fin, a.duracion_min));
 
-        const disponibles = slots.filter(hora => {
+        const disponibles = slots.filter(slot => {
           const ignoreId = isEdit ? editingTurno?.id : null;
           return !turnos.some(t => {
             if (ignoreId && t.id === ignoreId) return false;
@@ -112,11 +111,17 @@ export default function TurnosForm({ onSuccess, editingTurno, onCancelEdit }) {
             if (!t.inicio) return false;
             const tFecha = t.inicio.split("T")[0];
             const tHora = t.inicio.slice(11, 16);
-            return tFecha === form.fecha && tHora === hora;
+            return tFecha === form.fecha && tHora === slot.hora;
           });
         });
 
         setHorarios(disponibles);
+        if (disponibles.length) {
+          setForm(prev => ({
+            ...prev,
+            duracion_min: disponibles.find(d => d.hora === prev.horario)?.duracion ?? disponibles[0].duracion
+          }));
+        }
       } else {
         setHorarios([]);
         setErrors(prev => ({ ...prev, fecha: "El médico no atiende este día" }));
@@ -139,7 +144,7 @@ export default function TurnosForm({ onSuccess, editingTurno, onCancelEdit }) {
         duracion_min: editingTurno.duracion,
         estado_turno_id: estadoEncontrado ? estadoEncontrado.id : "",
         motivo: editingTurno.motivo,
-        observaciones: editingTurno.observaciones
+        observaciones: editingTurno.observaciones,
       });
       setShowForm(true);
       setTouched({});
@@ -156,7 +161,13 @@ export default function TurnosForm({ onSuccess, editingTurno, onCancelEdit }) {
   const isValid = Object.keys(errors).length === 0;
 
   const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    if (name === "horario") {
+      const slot = horarios.find(h => h.hora === value);
+      setForm(prev => ({ ...prev, horario: value, duracion_min: slot?.duracion ?? prev.duracion_min }));
+    } else {
+      setForm({ ...form, [name]: value });
+    }
     setAlert(null);
   };
 
@@ -174,7 +185,7 @@ export default function TurnosForm({ onSuccess, editingTurno, onCancelEdit }) {
     if (isEdit) {
       payload = {
         estado_turno_id: Number(form.estado_turno_id),
-        fecha_hora: (form.fecha && form.horario) ? `${form.fecha}T${form.horario}` : null
+        fecha_hora: (form.fecha && form.horario) ? `${form.fecha}T${form.horario}` : null,
       };
       endpoint = `${API_BASE}/api/turnos/${editingTurno.id}`;
       method = "PUT";
@@ -186,7 +197,7 @@ export default function TurnosForm({ onSuccess, editingTurno, onCancelEdit }) {
         duracion_min: Number(form.duracion_min),
         estado_turno_id: Number(form.estado_turno_id),
         motivo: form.motivo,
-        observaciones: form.observaciones
+        observaciones: form.observaciones,
       };
       endpoint = `${API_BASE}/api/turnos`;
       method = "POST";
@@ -196,7 +207,7 @@ export default function TurnosForm({ onSuccess, editingTurno, onCancelEdit }) {
       const res = await fetch(endpoint, {
         method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
+        body: JSON.stringify(payload),
       });
 
       if (res.ok) {
@@ -342,7 +353,7 @@ export default function TurnosForm({ onSuccess, editingTurno, onCancelEdit }) {
                     >
                       <option value="">Seleccionar...</option>
                       {horarios.map(h => (
-                        <option key={h} value={h}>{h}</option>
+                        <option key={h.hora} value={h.hora}>{h.hora}</option>
                       ))}
                     </select>
                     <label>Horario</label>

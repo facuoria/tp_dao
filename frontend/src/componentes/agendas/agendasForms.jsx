@@ -18,6 +18,13 @@ export default function AgendasForm({ onSuccess }) {
   const [showForm, setShowForm] = useState(false);
 
   const [medicos, setMedicos] = useState([]);
+  const [agenda, setAgenda] = useState([]);
+  const [agendaLoading, setAgendaLoading] = useState(false);
+
+  const toMinutes = (t) => {
+    const [hh = "0", mm = "0"] = String(t || "").split(":");
+    return Number(hh) * 60 + Number(mm);
+  };
 
   // ---- validar ----
   const validate = () => {
@@ -36,12 +43,31 @@ export default function AgendasForm({ onSuccess }) {
     if (!form.duracion_min || form.duracion_min <= 0)
       e.duracion_min = "Duración inválida";
 
+    if (
+      form.medico_id &&
+      form.dia_semana !== "" &&
+      form.hora_inicio &&
+      form.hora_fin &&
+      agenda.length
+    ) {
+      const start = toMinutes(form.hora_inicio);
+      const end = toMinutes(form.hora_fin);
+      const conflict = agenda
+        .filter((a) => a.dia_semana === Number(form.dia_semana))
+        .find(
+          (a) => start < toMinutes(a.hora_fin) && end > toMinutes(a.hora_inicio)
+        );
+      if (conflict) {
+        e.hora_inicio = `El m\u00e9dico ya tiene una franja de ${conflict.hora_inicio} a ${conflict.hora_fin}`;
+      }
+    }
+
     return e;
   };
 
   useEffect(() => {
     setErrors(validate());
-  }, [form]);
+  }, [form, agenda]);
 
   const isValid = Object.keys(errors).length === 0;
 
@@ -61,6 +87,20 @@ export default function AgendasForm({ onSuccess }) {
       .catch(() => {});
   }, []);
 
+  // ---- cargar agenda del médico seleccionado ----
+  useEffect(() => {
+    if (!form.medico_id) {
+      setAgenda([]);
+      return;
+    }
+    setAgendaLoading(true);
+    fetch(`${API_BASE}/api/agenda?medico_id=${form.medico_id}`)
+      .then((r) => r.json())
+      .then((rows) => setAgenda(rows || []))
+      .catch(() => setAgenda([]))
+      .finally(() => setAgendaLoading(false));
+  }, [form.medico_id]);
+
   // ---- submit ----
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -77,6 +117,7 @@ export default function AgendasForm({ onSuccess }) {
         setAlert({ ok: true, text: "Agenda registrada" });
         setForm(EMPTY_FORM);
         setTouched({});
+        setAgenda([]);
         if (onSuccess) onSuccess();
       } else {
         const data = await res.json();
@@ -131,7 +172,7 @@ export default function AgendasForm({ onSuccess }) {
                     </option>
                   ))}
                 </select>
-                <label>Médico</label>
+                <label>Médico {agendaLoading && "(cargando agenda...)"}</label>
 
                 <div className="invalid-feedback">{errors.medico_id}</div>
               </div>

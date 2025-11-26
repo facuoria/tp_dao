@@ -11,6 +11,10 @@ import type { AgendaMedico, Medico } from '@/lib/api/dto';
 
 const dayName = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
 const normalizeTime = (t: string) => t.split(':').slice(0, 2).join(':');
+const toMinutes = (t: string) => {
+  const [hh = '0', mm = '0'] = t.split(':');
+  return Number(hh) * 60 + Number(mm);
+};
 
 export default function NuevaAgendaPage() {
   const { id } = useParams<{ id: string }>();
@@ -41,18 +45,28 @@ export default function NuevaAgendaPage() {
       hora_fin: normalizeTime(values.hora_fin),
     };
 
-    const duplicate = existing.some(
-      (a) =>
-        a.dia_semana === payload.dia_semana &&
-        normalizeTime(a.hora_inicio) === payload.hora_inicio
-    );
-    if (duplicate) {
-      setError('hora_inicio', { message: 'Ya existe una franja para ese día a esa hora' });
+    const conflict = existing.find((a) => {
+      if (a.dia_semana !== payload.dia_semana) return false;
+      const newStart = toMinutes(payload.hora_inicio);
+      const newEnd = toMinutes(payload.hora_fin);
+      const existingStart = toMinutes(normalizeTime(a.hora_inicio));
+      const existingEnd = toMinutes(normalizeTime(a.hora_fin));
+      return newStart < existingEnd && newEnd > existingStart;
+    });
+
+    if (conflict) {
+      setError('hora_inicio', {
+        message: `Se superpone con la franja ${normalizeTime(conflict.hora_inicio)} - ${normalizeTime(conflict.hora_fin)}`,
+      });
       return;
     }
 
-    await createAgendaItem(medicoId, payload);
-    router.push(`/medicos/${id}/agenda`);
+    try {
+      await createAgendaItem(medicoId, payload);
+      router.push(`/medicos/${id}/agenda`);
+    } catch (err: any) {
+      setError('hora_inicio', { message: err?.message || 'No se pudo guardar la agenda' });
+    }
   }
 
   return (
