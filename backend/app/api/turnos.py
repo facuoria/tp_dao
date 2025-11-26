@@ -1,6 +1,9 @@
 import mysql.connector
 from fastapi import APIRouter, HTTPException
 
+from app.core.email import email_service
+from app.crud.medico_crud import get_medico_by_id
+from app.crud.paciente_crud import get_paciente_by_id
 from app.crud.turno_crud import actualizar_turno, crear_turno, eliminar_turno, list_estados, list_turnos
 from app.schemas.turno_schema import TurnoCreate, TurnoUpdate
 from app.utils.helpers import parse_datetime_value
@@ -15,7 +18,7 @@ def listar_turnos_api():
 
 
 @router.post("/turnos", status_code=201)
-def crear_turno_api(body: TurnoCreate):
+async def crear_turno_api(body: TurnoCreate):
     paciente_id = require_int(body.paciente_id, "paciente_id", "El paciente es obligatorio", "El paciente debe ser numerico")
     medico_id = require_int(body.medico_id, "medico_id", "El medico es obligatorio", "El medico debe ser numerico")
     estado_id = require_int(body.estado_turno_id, "estado_turno_id", "El estado del turno es obligatorio", "El estado debe ser numerico")
@@ -39,6 +42,24 @@ def crear_turno_api(body: TurnoCreate):
             body.motivo or "",
             body.observaciones or "",
         )
+        # Enviar email de confirmacion
+        try:
+            paciente = get_paciente_by_id(paciente_id)
+            medico = get_medico_by_id(medico_id)
+            
+            if paciente and medico and paciente.get("mail"):
+                await email_service.send_appointment_confirmation_email(
+                    email_to=paciente["mail"],
+                    paciente_nombre=paciente["nombre"],
+                    medico_nombre=medico["nombre"],
+                    medico_apellido=medico["apellido"],
+                    medico_matricula=medico["matricula"],
+                    fecha=fecha_dt.strftime("%d/%m/%Y"),
+                    hora=fecha_dt.strftime("%H:%M")
+                )
+        except Exception as e:
+            print(f"Error enviando email: {e}")
+
         return {"id": new_id}
 
     except ValueError as ve:

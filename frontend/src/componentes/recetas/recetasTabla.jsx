@@ -123,7 +123,14 @@ export default function RecetasTabla({ reloadKey }) {
                     <td>{r.medico_nombre}</td>
                     <td>{r.indicaciones}</td>
 
-                    <td>
+                    <td className="d-flex justify-content-center gap-2">
+                      <button
+                        className="btn btn-outline-primary btn-sm rounded-3 px-3 shadow-sm"
+                        onClick={() => window.open(`${API_BASE}/api/recetas/${r.id}/pdf`, "_blank")}
+                      >
+                        Descargar PDF de receta
+                      </button>
+
                       <button
                         className="btn btn-danger btn-sm rounded-3 px-3 shadow-sm"
                         onClick={() => deleteReceta(r.id)}

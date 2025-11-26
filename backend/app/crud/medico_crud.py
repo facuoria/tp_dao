@@ -35,6 +35,23 @@ def list_medicos(solo_con_agenda: bool = False):
         return cur.fetchall()
 
 
+def get_medico_by_id(medico_id: int):
+    sql = """ 
+        SELECT m.id,
+               m.nombre,
+               m.apellido,
+               m.matricula,
+               m.especialidad_id,
+               e.nombre AS especialidades
+        FROM medicos m
+        JOIN especialidades e ON m.especialidad_id = e.id
+        WHERE m.id = %s
+    """
+    with get_connection() as conn, conn.cursor(dictionary=True) as cur:
+        cur.execute(sql, (medico_id,))
+        return cur.fetchone()
+
+
 def create_medico(nombre, apellido, matricula, mail, especialidad_id):
     sql = """ 
         INSERT INTO medicos (nombre, apellido, matricula, mail, especialidad_id)

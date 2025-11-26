@@ -273,6 +273,18 @@ const AsistenciasInasistenciasTab = () => {
               </div>
 
               <div className="mt-4">
+                <button
+                  className="btn btn-outline-primary"
+                  onClick={() => {
+                    window.open(
+                      `${API_BASE}/api/reportes/asistencias-inasistencias/pdf?desde=${filters.desde}&hasta=${filters.hasta}`,
+                      "_blank"
+                    );
+                  }}
+                >
+                  Descargar PDF
+                </button>
+
                 <div className="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
                   <div>
                     <h5 className="mb-0">Turnos</h5>
