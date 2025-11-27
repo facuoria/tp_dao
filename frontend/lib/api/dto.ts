@@ -36,7 +36,7 @@ export type Turno = {
   fecha_hora: string; // ISO
   duracion_min: number;
   estado: EstadoTurno; // denormalizado para el front
-  estado_id: ID;       // MSW lo maneja igualmente
+  estado_id: ID;
   motivo?: string;
   observaciones?: string;
   created_at?: string;

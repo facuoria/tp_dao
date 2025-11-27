@@ -1,5 +1,4 @@
 ﻿// frontend/lib/api/client.ts
-const USE_MSW = process.env.NEXT_PUBLIC_USE_MSW === '1';
 const API_BASE = (process.env.NEXT_PUBLIC_API_URL || '').replace(/\/$/, ''); // sin "/" final
 
 type ApiOptions = {
@@ -11,8 +10,8 @@ type ApiOptions = {
 };
 
 export async function api<T>(path: string, opts: ApiOptions = {}): Promise<T> {
-  // Si usamos MSW, la request queda relativa a :3000; si no, va a :8000 (o lo que tengas en .env)
-  const base = USE_MSW ? window.location.origin : API_BASE || window.location.origin;
+  // La request va al backend configurado; si falta, usa el mismo origin.
+  const base = API_BASE || window.location.origin;
   const url = new URL(path, base);
 
   // Agregar ?query=string solo si tienen valor
