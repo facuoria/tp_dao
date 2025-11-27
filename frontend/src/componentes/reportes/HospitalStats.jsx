@@ -49,26 +49,26 @@ const DonutIcon = () => (
 const TABS = [
   {
     id: "turnos-medico",
-    label: "Turnos por medico",
-    description: "Filtra turnos atendidos por profesional y periodo",
+    label: "Turnos por médico",
+    description: "Filtra turnos atendidos por profesional y período",
     icon: <UserIcon />,
   },
   {
     id: "turnos-especialidad",
     label: "Cantidad por especialidad",
-    description: "Explora la distribucion de estados por especialidad",
+    description: "Explora la distribución de estados por especialidad",
     icon: <MicroscopeIcon />,
   },
   {
     id: "pacientes-atendidos",
     label: "Pacientes atendidos",
-    description: "Cantidad de pacientes con turnos atendidos en un periodo",
+    description: "Cantidad de pacientes con turnos atendidos en un período",
     icon: <PeopleIcon />,
   },
   {
     id: "asistencias-inasistencias",
-    label: "Asistencias vs inasistencias",
-    description: "Distribucion de asistencias e inasistencias de pacientes",
+    label: "Asistencias vs Inasistencias",
+    description: "Distribución de asistencias e inasistencias de pacientes",
     icon: <DonutIcon />,
   },
 ];
@@ -81,11 +81,11 @@ const HospitalStats = () => {
       <div className="container">
         <div className="text-center mb-4">
           <p className="text-primary text-uppercase fw-semibold small mb-2">
-            Analisis y estadisticas del hospital
+            Análisis y estadísticas del hospital
           </p>
           <h2 className="fw-bold mb-3">Explora la actividad asistencial reciente</h2>
           <p className="text-muted mb-0">
-            Filtra y compara los turnos por profesional o especialidad para entender la demanda de atencion.
+            Filtra y compara los turnos por profesional o especialidad para entender la demanda de atención.
           </p>
         </div>
 

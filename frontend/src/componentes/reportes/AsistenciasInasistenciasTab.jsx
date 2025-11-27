@@ -47,7 +47,7 @@ const chartOptions = {
     },
     title: {
       display: true,
-      text: "Asistencias vs inasistencias",
+      text: "Asistencias vs Inasistencias",
     },
   },
 };
@@ -58,14 +58,14 @@ const CATEGORY_CONFIG = {
     color: "rgba(13,110,253,0.9)",
     borderColor: "rgba(13,110,253,1)",
     matcher: estado => estado === "atendido",
-    emptyMessage: "No hubo asistencias en el periodo seleccionado.",
+    emptyMessage: "No hubo asistencias en el período seleccionado.",
   },
   inasistencias: {
     label: "Inasistencias",
     color: "rgba(220,53,69,0.9)",
     borderColor: "rgba(220,53,69,1)",
     matcher: estado => estado !== "atendido",
-    emptyMessage: "No hubo inasistencias en el periodo seleccionado.",
+    emptyMessage: "No hubo inasistencias en el período seleccionado.",
   },
 };
 
@@ -95,7 +95,7 @@ const AsistenciasInasistenciasTab = () => {
         if (!cancelled) setTurnos(data);
       } catch (err) {
         console.error(err);
-        if (!cancelled) setError("Ocurrio un problema al cargar los turnos.");
+        if (!cancelled) setError("Ocurrió un problema al cargar los turnos.");
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -176,8 +176,8 @@ const AsistenciasInasistenciasTab = () => {
       await downloadReportPdf({
         element: reportRef.current,
         fileName: `asistencias-inasistencias-${filters.desde}-${filters.hasta}`,
-        title: "Asistencias vs inasistencias",
-        subtitle: `${selectedLabel} | Periodo: ${filters.desde} - ${filters.hasta}`,
+        title: "Asistencias vs Inasistencias",
+        subtitle: `${selectedLabel} | Período: ${filters.desde} - ${filters.hasta}`,
       });
     } catch (err) {
       console.error("No se pudo descargar el reporte de asistencias", err);
@@ -243,7 +243,7 @@ const AsistenciasInasistenciasTab = () => {
               <div className="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
                 <div>
                   <h5 className="mb-1">Reporte de asistencias vs inasistencias</h5>
-                  <p className="text-muted small mb-0">Incluye grafico, resumen y tabla visibles.</p>
+                  <p className="text-muted small mb-0">Incluye gráfico, resumen y tabla visibles.</p>
                 </div>
                 <button className="btn btn-outline-primary" onClick={handleDownload} disabled={downloading}>
                   {downloading ? "Generando PDF..." : "Descargar PDF"}
@@ -257,7 +257,7 @@ const AsistenciasInasistenciasTab = () => {
                       <div className="card-body d-flex flex-column">
                         <div className="mb-3">
                           <p className="text-muted small mb-1">Clicks interactivos</p>
-                          <p className="mb-0">Toca un segmento para mostrar los turnos que corresponden a esa categoria.</p>
+                          <p className="mb-0">Toca un segmento para mostrar los turnos que corresponden a esa categoría.</p>
                         </div>
                         <div className="flex-grow-1 d-flex align-items-center justify-content-center" style={{ minHeight: 280 }}>
                           <Pie ref={chartRef} data={pieData} options={chartOptions} onClick={handlePieClick} />
@@ -287,7 +287,7 @@ const AsistenciasInasistenciasTab = () => {
                           })}
                         </ul>
                         <div className="alert alert-secondary mb-0" role="alert">
-                          Seleccion actual:{" "}
+                          Selección actual:{" "}
                           {selectedCategory ? CATEGORY_CONFIG[selectedCategory].label : "ninguna (muestra ambos estados)"}
                         </div>
                       </div>
@@ -315,7 +315,7 @@ const AsistenciasInasistenciasTab = () => {
                         <thead>
                           <tr>
                             <th scope="col">Paciente</th>
-                            <th scope="col">Medico</th>
+                            <th scope="col">Médico</th>
                             <th scope="col">Fecha</th>
                             <th scope="col">Estado</th>
                           </tr>

@@ -20,7 +20,7 @@ const chartOptions = {
     legend: { display: false },
     title: {
       display: true,
-      text: "Turnos atendidos en el periodo",
+      text: "Turnos atendidos en el período",
     },
   },
   scales: {
@@ -218,7 +218,7 @@ const PacientesAtendidosTab = () => {
               <div className="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
                 <div>
                   <h5 className="mb-1">Reporte de pacientes atendidos</h5>
-                  <p className="text-muted small mb-0">Incluye el grafico y la tabla visibles en pantalla.</p>
+                  <p className="text-muted small mb-0">Incluye el gráfico y la tabla visibles en pantalla.</p>
                 </div>
                 <button className="btn btn-outline-primary" onClick={handleDownload} disabled={downloading}>
                   {downloading ? "Generando PDF..." : "Descargar PDF"}
@@ -244,7 +244,7 @@ const PacientesAtendidosTab = () => {
                       <h5 className="mb-0">Pacientes atendidos</h5>
                       <p className="text-muted small mb-0">
                         {patientsData.chartEntries.length} paciente
-                        {patientsData.chartEntries.length === 1 ? "" : "s"} recibieron atencion en el periodo.
+                        {patientsData.chartEntries.length === 1 ? "" : "s"} recibieron atención en el período.
                       </p>
                     </div>
                   </div>

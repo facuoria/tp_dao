@@ -31,7 +31,7 @@ export default function Navbar() {
       style={{ position: "relative", zIndex: 9999 }}
     >
       <Link className="navbar-brand fw-bold" to="/" onClick={close}>
-        Turnero Médico
+        Clínica San Gabriel
       </Link>
 
       <button

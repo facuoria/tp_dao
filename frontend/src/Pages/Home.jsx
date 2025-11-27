@@ -27,10 +27,10 @@ export default function Home() {
         ></div>
 
         <div style={{ position: "relative", color: "white", textAlign: "center" }}>
-          <p className="text-uppercase fw-semibold small mb-2">Gestion integral</p>
-          <h1 className="fw-bold display-5">Bienvenido al Turnero Medico</h1>
+          <p className="text-uppercase fw-semibold small mb-2">Gestión integral</p>
+          <h1 className="fw-bold display-5">Bienvenido a la Clínica San Gabriel</h1>
           <p className="fs-4" style={{ maxWidth: "600px", margin: "1rem auto 0" }}>
-            Gestiona pacientes, medicos, especialidades, agenda y reportes desde un solo lugar.
+            Gestiona pacientes, médicos, especialidades, agenda y reportes desde un solo lugar.
           </p>
         </div>
       </section>

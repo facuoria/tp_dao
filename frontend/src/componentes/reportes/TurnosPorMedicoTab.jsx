@@ -54,7 +54,7 @@ const chartOptions = {
     legend: { display: false },
     title: {
       display: true,
-      text: "Turnos atendidos por dia",
+      text: "Turnos atendidos por día",
     },
   },
   scales: {
@@ -104,7 +104,7 @@ const TurnosPorMedicoTab = () => {
           fetch(`${API_BASE}/api/turnos`),
         ]);
 
-        if (!medicosRes.ok) throw new Error("Error al cargar medicos");
+        if (!medicosRes.ok) throw new Error("Error al cargar médicos");
         if (!turnosRes.ok) throw new Error("Error al cargar turnos");
 
         const [medicosData, turnosData] = await Promise.all([
@@ -118,7 +118,7 @@ const TurnosPorMedicoTab = () => {
       } catch (err) {
         console.error(err);
         if (!cancelled) {
-          setError("No pudimos cargar los datos. Proba nuevamente en unos minutos.");
+          setError("No pudimos cargar los datos. Probá nuevamente en unos minutos.");
         }
       } finally {
         if (!cancelled) {
@@ -216,8 +216,8 @@ const TurnosPorMedicoTab = () => {
       await downloadReportPdf({
         element: reportRef.current,
         fileName: `turnos-medico-${selectedMedico?.apellido || "sin-medico"}`,
-        title: "Turnos atendidos por medico",
-        subtitle: `${selectedMedico ? `${selectedMedico.nombre} ${selectedMedico.apellido}` : "Sin medico"} | Periodo: ${formatInputDate(filters.desde)} - ${formatInputDate(filters.hasta)} | Total: ${filteredTurnos.length}`,
+        title: "Turnos atendidos por médico",
+        subtitle: `${selectedMedico ? `${selectedMedico.nombre} ${selectedMedico.apellido}` : "Sin médico"} | Período: ${formatInputDate(filters.desde)} - ${formatInputDate(filters.hasta)} | Total: ${filteredTurnos.length}`,
       });
     } catch (err) {
       console.error("No se pudo generar el PDF", err);
@@ -297,7 +297,7 @@ const TurnosPorMedicoTab = () => {
         <div className="mt-4">
           {!hasMedicoSelected && (
             <div className="alert alert-info mb-0" role="alert">
-              Selecciona un medico para visualizar los turnos atendidos en el periodo indicado.
+              Selecciona un médico para visualizar los turnos atendidos en el período indicado.
             </div>
           )}
 
@@ -307,7 +307,7 @@ const TurnosPorMedicoTab = () => {
                 <div>
                   <h5 className="mb-1">Reporte de turnos atendidos</h5>
                   <p className="text-muted small mb-0">
-                    Incluye grafico, resumen y tabla visibles del medico seleccionado.
+                    Incluye gráfico, resumen y tabla visibles del médico seleccionado.
                   </p>
                 </div>
                 <button className="btn btn-outline-primary" onClick={handleDownload} disabled={downloading}>
@@ -322,7 +322,7 @@ const TurnosPorMedicoTab = () => {
                       <div className="card-body">
                         <h6 className="text-uppercase text-muted fw-semibold mb-3">Distribucion</h6>
                         {filteredTurnos.length === 0 ? (
-                          <p className="text-muted mb-0">No hay turnos atendidos para el periodo seleccionado.</p>
+                          <p className="text-muted mb-0">No hay turnos atendidos para el período seleccionado.</p>
                         ) : (
                           <div style={{ minHeight: 320 }}>
                             <Bar data={chartData} options={chartOptions} />
@@ -343,7 +343,7 @@ const TurnosPorMedicoTab = () => {
                             : "No disponible"}
                         </p>
                         <p className="mb-1">
-                          <span className="fw-semibold">Periodo:</span>{" "}
+                          <span className="fw-semibold">Período:</span>{" "}
                           {`${formatInputDate(filters.desde)} - ${formatInputDate(filters.hasta)}`}
                         </p>
                         <div className="mt-auto">
@@ -361,7 +361,7 @@ const TurnosPorMedicoTab = () => {
                       <h5 className="mb-0">Turnos atendidos</h5>
                       <p className="text-muted mb-0 small">
                         Mostrando {filteredTurnos.length} turno{filteredTurnos.length === 1 ? "" : "s"} atendido
-                        {filteredTurnos.length === 1 ? "" : "s"} por el medico seleccionado.
+                        {filteredTurnos.length === 1 ? "" : "s"} por el médico seleccionado.
                       </p>
                     </div>
                   </div>
@@ -393,7 +393,7 @@ const TurnosPorMedicoTab = () => {
                                   Atendido
                                 </span>
                                 <div className="small text-muted">{formatDateTime(turno.inicio)}</div>
-                                <div className="small text-muted">Duracion: {turno.duracion ?? 0} min</div>
+                                <div className="small text-muted">Duración: {turno.duracion ?? 0} min</div>
                               </td>
                               <td>{turno.motivo || "Sin motivo"}</td>
                               <td>{turno.observaciones || "Sin datos"}</td>

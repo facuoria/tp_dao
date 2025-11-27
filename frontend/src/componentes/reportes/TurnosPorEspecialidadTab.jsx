@@ -79,7 +79,7 @@ const TurnosPorEspecialidadTab = () => {
         setTurnos(turnosData);
       } catch (err) {
         console.error(err);
-        if (!cancelled) setError("Ocurrio un problema al obtener los datos.");
+        if (!cancelled) setError("Ocurrió un problema al obtener los datos.");
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -198,7 +198,7 @@ const TurnosPorEspecialidadTab = () => {
         <div className="mt-4">
           {!especialidadId ? (
             <div className="alert alert-info mb-0" role="alert">
-              Elegi una especialidad para ver la distribucion de estados de sus turnos.
+              Elegí una especialidad para ver la distribución de estados de sus turnos.
             </div>
           ) : (
             <>
@@ -206,7 +206,7 @@ const TurnosPorEspecialidadTab = () => {
                 <div>
                   <h5 className="mb-1">Reporte por especialidad</h5>
                   <p className="text-muted small mb-0">
-                    Incluye el grafico y el resumen visible para la especialidad seleccionada.
+                    Incluye el gráfico y el resumen visible para la especialidad seleccionada.
                   </p>
                 </div>
                 <button
