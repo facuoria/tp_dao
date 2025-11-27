@@ -56,7 +56,7 @@ export default function MedicosTabla({ reloadKey, onEdit }) {
         <div className="d-flex gap-2">
           <input
             className="form-control form-control-sm"
-            style={{ minWidth: "200px" }}
+            style={{ minWidth: "180px", maxWidth: "220px" }}
             placeholder="Buscar por nombre o matrícula"
             value={query}
             onChange={(e) => setQuery(e.target.value)}

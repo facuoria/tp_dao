@@ -139,7 +139,7 @@ function PacienteTable({ reloadKey, onEdit, onViewHistory }) {
                       >
                         Eliminar
                       </button>
-                      <div className="dropdown position-relative">
+                      <div className="dropdown position-relative" style={{ overflow: "visible" }}>
                         <button
                           className="btn btn-outline-secondary btn-sm rounded-3 shadow-sm"
                           type="button"
@@ -153,7 +153,7 @@ function PacienteTable({ reloadKey, onEdit, onViewHistory }) {
                             display: openMenu === p.id ? "block" : "none",
                             minWidth: "10rem",
                             transform: "translate(-20px, 8px)",
-                            zIndex: 3000,
+                            zIndex: 4000,
                             position: "absolute",
                             inset: "auto auto auto auto",
                             overflow: "visible"

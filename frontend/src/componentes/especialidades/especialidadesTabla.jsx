@@ -57,7 +57,7 @@ export default function EspecialidadesTabla({ reloadKey }) {
         <div className="d-flex gap-2">
           <input
             className="form-control form-control-sm"
-            style={{ minWidth: "180px" }}
+            style={{ minWidth: "180px", maxWidth: "220px" }}
             placeholder="Buscar por nombre"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
@@ -118,3 +118,4 @@ export default function EspecialidadesTabla({ reloadKey }) {
     </div>
   );
 }
+

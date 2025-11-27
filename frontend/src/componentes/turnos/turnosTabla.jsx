@@ -69,10 +69,10 @@ export default function TurnosTabla({ reloadKey, onEdit }) {
           <p className="text-muted small">Listado de turnos cargados.</p>
         </div>
 
-        <div className="d-flex gap-2">
+        <div className="d-flex gap-2 flex-wrap align-items-center">
           <input
             className="form-control form-control-sm"
-            style={{ minWidth: "220px" }}
+            style={{ minWidth: "180px", maxWidth: "220px" }}
             placeholder="Buscar por paciente, médico o estado"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
@@ -165,3 +165,4 @@ export default function TurnosTabla({ reloadKey, onEdit }) {
     </div>
   );
 }
+

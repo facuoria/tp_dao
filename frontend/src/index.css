@@ -46,8 +46,13 @@ body {
 .table-scroll-x {
   width: 100%;
   overflow-x: auto;
-  overflow-y: visible;
+  overflow-y: hidden;
   position: relative;
+  z-index: 1;
+}
+
+.table-scroll-x .dropdown-menu {
+  position: fixed;
 }
 
 .slide-down {

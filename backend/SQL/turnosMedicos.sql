@@ -121,27 +121,6 @@ CREATE TABLE IF NOT EXISTS `recetas` (
     ON DELETE RESTRICT ON UPDATE NO ACTION
 ) ENGINE=InnoDB;
 
--- -----------------------------------------------------
--- historial_clinico
--- -----------------------------------------------------
-CREATE TABLE IF NOT EXISTS `historial_clinico` (
-  `id` INT NOT NULL AUTO_INCREMENT,
-  `descripcion` TEXT NULL,
-  `fecha_carga` DATETIME NULL,
-  `pacientes_id` INT NOT NULL,
-  `turno_id` INT NOT NULL,
-  PRIMARY KEY (`id`),
-  KEY `idx_historial_paciente` (`pacientes_id`),
-  KEY `idx_historial_turno` (`turno_id`),
-  CONSTRAINT `fk_historial_clinico_pacientes1`
-    FOREIGN KEY (`pacientes_id`) REFERENCES `pacientes` (`id`)
-    ON DELETE RESTRICT ON UPDATE NO ACTION,
-  CONSTRAINT `fk_historial_clinico_turnos1`
-    FOREIGN KEY (`turno_id`) REFERENCES `turnos` (`id`)
-    ON DELETE RESTRICT ON UPDATE NO ACTION
-) ENGINE=InnoDB;
-
--- -----------------------------------------------------
 -- agenda_medico
 -- -----------------------------------------------------
 CREATE TABLE IF NOT EXISTS `agenda_medico` (
