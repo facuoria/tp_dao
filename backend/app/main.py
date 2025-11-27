@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse
 
 from app.api import agendas, especialidades, medicos, pacientes, recetas, turnos, reportes
+from app.core import listeners  # registra observadores
 
 app = FastAPI(title="API TURNOS MEDICOS")
 
