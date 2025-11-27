@@ -41,10 +41,10 @@ class EmailService:
             <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
                 <div style="max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 5px;">
                     <h2 style="color: #2c3e50;">¡Hola {nombre}!</h2>
-                    <p>Bienvenido a la clinica San Gabriel. Sus datos han sido guardados exitosamente.</p>
+                    <p>Bienvenido a la Clínica San Gabriel. Sus datos han sido guardados exitosamente.</p>
                     <br>
                     <p>Saludos cordiales.</p>
-                    <p><strong>Recepcion de la clinica San Gabriel</strong></p>
+                    <p><strong>Recepción de la Clínica San Gabriel</strong></p>
                 </div>
             </body>
         </html>

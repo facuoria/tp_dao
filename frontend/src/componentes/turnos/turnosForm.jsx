@@ -1,7 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { API_BASE } from "../../api.js";
 
 export default function TurnosForm({ onSuccess, editingTurno, onCancelEdit }) {
+  const jsToAgendaDay = (jsDay) => (jsDay + 6) % 7; // JS: 0=Domingo; Agenda: 0=Lunes
   const EMPTY_FORM = {
     paciente_id: "",
     medico_id: "",
@@ -28,7 +29,31 @@ export default function TurnosForm({ onSuccess, editingTurno, onCancelEdit }) {
   const [horarios, setHorarios] = useState([]); // {hora, duracion}
   const [turnos, setTurnos] = useState([]);
   const [agenda, setAgenda] = useState([]);
-  const hoy = new Date().toISOString().split("T")[0];
+  const fechasDisponibles = useMemo(() => {
+    if (!agenda.length) return [];
+    const daysSet = new Set(agenda.map(a => Number(a.dia_semana)));
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const res = [];
+    for (let i = 0; i < 730; i++) {
+      const d = new Date(today.getTime() + i * 86400000);
+      const agendaDay = jsToAgendaDay(d.getDay());
+      if (daysSet.has(agendaDay)) res.push(d.toISOString().slice(0, 10));
+    }
+    return res;
+  }, [agenda]);
+
+  const atiendeFecha = (dateStr) => {
+    if (!dateStr || !agenda.length) return false;
+    const dow = jsToAgendaDay(new Date(`${dateStr}T00:00:00`).getDay());
+    return agenda.some(a => Number(a.dia_semana) === Number(dow));
+  };
+
+  const opcionesFecha = useMemo(() => {
+    const set = new Set(fechasDisponibles);
+    if (form.fecha && atiendeFecha(form.fecha)) set.add(form.fecha);
+    return Array.from(set).sort();
+  }, [fechasDisponibles, form.fecha, agenda]);
 
   // ---------------- VALIDACIONES ----------------
   const validate = () => {
@@ -44,7 +69,11 @@ export default function TurnosForm({ onSuccess, editingTurno, onCancelEdit }) {
     const isReprogramado = estados.find(est => est.id == form.estado_turno_id)?.nombre.toLowerCase() === "reprogramado";
 
     if (!isEdit || isReprogramado) {
-      if (!form.fecha) e.fecha = "La fecha es obligatoria";
+      if (!form.fecha) {
+        e.fecha = "La fecha es obligatoria";
+      } else if (agenda.length && !atiendeFecha(form.fecha)) {
+        e.fecha = "El médico no atiende este día";
+      }
       if (!form.horario) e.horario = "Elegí horario";
     }
 
@@ -53,7 +82,7 @@ export default function TurnosForm({ onSuccess, editingTurno, onCancelEdit }) {
 
   useEffect(() => {
     setErrors(validate());
-  }, [form, isEdit, estados]);
+  }, [form, isEdit, estados, fechasDisponibles, agenda]);
 
   // ---------------- CARGO LISTAS ----------------
   const loadTurnos = () => fetch(`${API_BASE}/api/turnos`).then(r => r.json()).then(setTurnos);
@@ -76,6 +105,14 @@ export default function TurnosForm({ onSuccess, editingTurno, onCancelEdit }) {
     }
   }, [form.medico_id]);
 
+  useEffect(() => {
+    if (agenda.length && form.fecha && !atiendeFecha(form.fecha)) {
+      setForm(prev => ({ ...prev, fecha: "" }));
+      setHorarios([]);
+    }
+  }, [agenda, form.fecha]);
+
+
   // ---------------- HORARIOS ----------------
   const generarHorarios = (inicioStr, finStr, duracion) => {
     const toMinutes = (t) => {
@@ -86,7 +123,7 @@ export default function TurnosForm({ onSuccess, editingTurno, onCancelEdit }) {
     const fin = toMinutes(finStr);
     const step = Number(duracion);
     const arr = [];
-    for (let m = inicio; m <= fin; m += step) {
+    for (let m = inicio; m + step <= fin; m += step) {
       const h = String(Math.floor(m / 60)).padStart(2, "0");
       const min = String(m % 60).padStart(2, "0");
       arr.push({ hora: `${h}:${min}`, duracion: step });
@@ -96,9 +133,9 @@ export default function TurnosForm({ onSuccess, editingTurno, onCancelEdit }) {
 
   useEffect(() => {
     if (form.fecha && agenda.length > 0) {
-      const dateObj = new Date(form.fecha);
-      const weekday = dateObj.getDay(); // 0 = Sunday, 1 = Monday ...
-      const entries = agenda.filter(a => a.dia_semana === weekday);
+      const dateObj = new Date(`${form.fecha}T00:00:00`);
+      const weekday = jsToAgendaDay(dateObj.getDay()); // agenda: 0 = Monday
+      const entries = agenda.filter(a => Number(a.dia_semana) === Number(weekday));
       if (entries.length) {
         const slots = entries.flatMap(a => generarHorarios(a.hora_inicio, a.hora_fin, a.duracion_min));
 
@@ -165,6 +202,21 @@ export default function TurnosForm({ onSuccess, editingTurno, onCancelEdit }) {
     if (name === "horario") {
       const slot = horarios.find(h => h.hora === value);
       setForm(prev => ({ ...prev, horario: value, duracion_min: slot?.duracion ?? prev.duracion_min }));
+    } else if (name === "fecha") {
+      if (!agenda.length) {
+        setForm({ ...form, fecha: value });
+        setHorarios([]);
+        return;
+      }
+      const permitida = atiendeFecha(value) ? value : "";
+      if (!permitida) {
+        setForm({ ...form, fecha: "" });
+        setErrors(prev => ({ ...prev, fecha: "El médico no atiende este día" }));
+        setHorarios([]);
+        return;
+      }
+      setForm({ ...form, [name]: permitida });
+      setHorarios([]);
     } else {
       setForm({ ...form, [name]: value });
     }
@@ -326,15 +378,19 @@ export default function TurnosForm({ onSuccess, editingTurno, onCancelEdit }) {
               {(!isEdit || (isEdit && estados.find(e => e.id == form.estado_turno_id)?.nombre.toLowerCase() === "reprogramado")) && (
                 <div className="col-md-6">
                   <div className="form-floating">
-                    <input
-                      type="date"
+                    <select
                       name="fecha"
-                      min={hoy}
-                      className={`form-control ${touched.fecha && errors.fecha ? "is-invalid" : ""}`}
+                      disabled={!opcionesFecha.length}
+                      className={`form-select ${touched.fecha && errors.fecha ? "is-invalid" : ""}`}
                       value={form.fecha}
                       onChange={handleChange}
                       onBlur={() => markTouched("fecha")}
-                    />
+                    >
+                      <option value="">{opcionesFecha.length ? "Seleccione fecha..." : "Sin agenda cargada"}</option>
+                      {opcionesFecha.map(f => (
+                        <option key={f} value={f}>{f}</option>
+                      ))}
+                    </select>
                     <label>Fecha</label>
                     <div className="invalid-feedback">{errors.fecha}</div>
                   </div>

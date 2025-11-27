@@ -60,7 +60,7 @@ export default function EspecialidadesForm({ onSuccess }) {
 
       const data = await res.json().catch(() => ({}));
 
-      setAlert({ ok: true, text: `Especialidad creada (ID ${data.id})` });
+      setAlert({ ok: true, text: "Especialidad creada" });
 
       setForm(EMPTY_FORM);
       setTouched({});
