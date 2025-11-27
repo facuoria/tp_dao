@@ -16,7 +16,7 @@ export default function MedicoForm({ onSuccess, editingMedico, onCancelEdit }) {
   const [alert, setAlert] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [especialidades, setEspecialidades] = useState([]);
-  const [showForm, setShowForm] = useState(false);
+  const [showForm, setShowForm] = useState(true);
 
   const isEdit = Boolean(editingMedico?.id);
 
@@ -123,7 +123,7 @@ export default function MedicoForm({ onSuccess, editingMedico, onCancelEdit }) {
         )}
       </div>
 
-      <div className={`slide-left w-100 ${showForm ? "show" : ""}`}>
+      <div className="w-100" style={{ display: showForm ? "block" : "none" }}>
         <div className="card shadow border-0 rounded-4 p-4" style={{ width: "100%" }}>
           {alert && (
             <div className={`alert ${alert.ok ? "alert-success" : "alert-danger"}`}>

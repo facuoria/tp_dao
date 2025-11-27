@@ -15,7 +15,7 @@ export default function AgendasForm({ onSuccess }) {
   const [errors, setErrors] = useState({});
   const [alert, setAlert] = useState(null);
   const [submitting, setSubmitting] = useState(false);
-  const [showForm, setShowForm] = useState(false);
+  const [showForm, setShowForm] = useState(true);
 
   const [medicos, setMedicos] = useState([]);
   const [agenda, setAgenda] = useState([]);

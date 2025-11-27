@@ -16,7 +16,7 @@ export default function PacienteForm({ onSuccess, editingPaciente, onCancelEdit 
   const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
   const [alert, setAlert] = useState(null);
-  const [showForm, setShowForm] = useState(false);
+  const [showForm, setShowForm] = useState(true);
 
   const isEdit = Boolean(editingPaciente?.id);
 
@@ -159,7 +159,7 @@ export default function PacienteForm({ onSuccess, editingPaciente, onCancelEdit 
         )}
       </div>
 
-      <div className={`slide-left w-100 ${showForm ? "show" : ""}`}>
+      <div className="w-100" style={{ display: showForm ? "block" : "none" }}>
         <div className="card shadow border-0 rounded-4 p-4" style={{ width: "100%" }}>
           {/* ALERTAS */}
           {alert && (

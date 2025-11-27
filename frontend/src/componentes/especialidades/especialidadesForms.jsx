@@ -11,7 +11,7 @@ export default function EspecialidadesForm({ onSuccess }) {
   const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
   const [alert, setAlert] = useState(null);
-  const [showForm, setShowForm] = useState(false);
+  const [showForm, setShowForm] = useState(true);
 
   const isFormValid = useMemo(() => {
     return form.nombre.trim().length >= 3 && !submitting;
@@ -87,7 +87,7 @@ export default function EspecialidadesForm({ onSuccess }) {
         </button>
       </div>
 
-      <div className={`slide-left w-100 ${showForm ? "show" : ""}`}>
+      <div className="w-100" style={{ display: showForm ? "block" : "none" }}>
         <div className="card shadow-lg border-0 rounded-4 p-4" style={{ width: "100%" }}>
           {alert && (
             <div className={`alert ${alert.ok ? "alert-success" : "alert-danger"}`}>

@@ -40,10 +40,10 @@ export default function PacientesPage() {
 
   return (
     <div className="container py-4">
-      <h1 className="text-center mb-4">Gestión de Pacientes</h1>
+      <h1 className="text-center mb-4">Gestion de Pacientes</h1>
 
-      <div className="d-flex flex-wrap gap-4 align-items-start justify-content-center">
-        <div className="d-flex flex-column align-items-center" style={{ maxWidth: "520px", flex: "1 1 360px" }}>
+      <div className="row g-4 align-items-start">
+        <div className="col-12 col-lg-4 d-flex">
           <PacientesForms
             onSuccess={() => setReloadKey((k) => k + 1)}
             editingPaciente={editingPaciente}
@@ -51,7 +51,7 @@ export default function PacientesPage() {
           />
         </div>
 
-        <div className="flex-grow-1" style={{ minWidth: "460px", maxWidth: "1200px" }}>
+        <div className="col-12 col-lg-8">
           <PacientesTabla
             reloadKey={reloadKey}
             onEdit={setEditingPaciente}
@@ -72,7 +72,7 @@ export default function PacientesPage() {
             <div className="card-header bg-primary text-white d-flex justify-content-between align-items-center">
               <div>
                 <h5 className="mb-0">Historial de {historyPaciente.nombre} {historyPaciente.apellido}</h5>
-                <small className="text-light">DNI: {historyPaciente.dni} • Tel: {historyPaciente.telefono || "-"}</small>
+                <small className="text-light">DNI: {historyPaciente.dni}  Tel: {historyPaciente.telefono || "-"}</small>
               </div>
               <button className="btn btn-outline-light btn-sm" onClick={closeHistory}>Cerrar</button>
             </div>
@@ -92,10 +92,10 @@ export default function PacientesPage() {
                     <thead className="table-light">
                       <tr className="text-center">
                         <th>Fecha</th>
-                        <th>Médico</th>
+                        <th>Medico</th>
                         <th>Especialidad</th>
                         <th>Estado</th>
-                        <th>Duración</th>
+                        <th>Duracion</th>
                         <th>Motivo</th>
                         <th>Observaciones</th>
                       </tr>

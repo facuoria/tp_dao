@@ -8,11 +8,10 @@ export default function TurnosPage() {
 
   return (
     <div className="container py-4">
-      <h1 className="text-center mb-4">Gestión de Turnos</h1>
+      <h1 className="text-center mb-4">Gestion de Turnos</h1>
 
-      <div className="d-flex flex-wrap gap-4 align-items-start justify-content-center">
-        {/* === COLUMNA IZQUIERDA: FORMULARIOS === */}
-        <div className="forms-column" style={{ maxWidth: "520px" }}>
+      <div className="row g-4 align-items-start">
+        <div className="col-12 col-lg-4">
           <TurnosForm
             onSuccess={() => setReloadKey(k => k + 1)}
             editingTurno={editingTurno}
@@ -20,8 +19,7 @@ export default function TurnosPage() {
           />
         </div>
 
-        {/* === COLUMNA DERECHA: TABLA === */}
-        <div className="table-column" style={{ flexGrow: 1, minWidth: "420px", maxWidth: "960px" }}>
+        <div className="col-12 col-lg-8">
           <TurnosTabla reloadKey={reloadKey} onEdit={setEditingTurno} />
         </div>
       </div>

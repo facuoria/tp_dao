@@ -14,7 +14,7 @@ export default function RecetasForm({ onSuccess }) {
   const [errors, setErrors] = useState({});
   const [alert, setAlert] = useState(null);
   const [submitting, setSubmitting] = useState(false);
-  const [showForm, setShowForm] = useState(false);
+  const [showForm, setShowForm] = useState(true);
 
   const [turnosAtendidos, setTurnosAtendidos] = useState([]);
 
@@ -175,7 +175,7 @@ export default function RecetasForm({ onSuccess }) {
       </div>
 
       {/* Formulario */}
-      <div className={`slide-left w-100 ${showForm ? "show" : ""}`}>
+      <div className="w-100" style={{ display: showForm ? "block" : "none" }}>
         <div className="card p-4 shadow border-0 rounded-4">
 
           {/* Alertas */}

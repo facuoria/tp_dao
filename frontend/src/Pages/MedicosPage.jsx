@@ -8,10 +8,10 @@ export default function MedicosPage() {
 
   return (
     <div className="container py-4">
-      <h1 className="text-center mb-4">Gestión de Médicos</h1>
+      <h1 className="text-center mb-4">Gestion de Medicos</h1>
 
-      <div className="d-flex flex-wrap gap-4 align-items-start justify-content-center">
-        <div className="d-flex flex-column align-items-center" style={{ maxWidth: "520px" }}>
+      <div className="row g-4 align-items-start">
+        <div className="col-12 col-lg-4">
           <MedicosForm
             onSuccess={() => setReloadKey((k) => k + 1)}
             editingMedico={editingMedico}
@@ -19,7 +19,7 @@ export default function MedicosPage() {
           />
         </div>
 
-        <div className="flex-grow-1" style={{ minWidth: "420px", maxWidth: "960px" }}>
+        <div className="col-12 col-lg-8">
           <MedicosTabla reloadKey={reloadKey} onEdit={setEditingMedico} />
         </div>
       </div>

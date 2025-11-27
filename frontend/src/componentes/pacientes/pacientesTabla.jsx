@@ -109,7 +109,7 @@ function PacienteTable({ reloadKey, onEdit, onViewHistory }) {
       )}
 
       {!loading && !error && filtered.length > 0 && (
-        <div className="table-responsive" style={{ overflow: "visible" }}>
+        <div className="table-scroll-x">
           <table className="table table-hover table-striped align-middle mb-0" style={{ overflow: "visible" }}>
             <thead className="table-light">
               <tr className="text-center text-muted">
