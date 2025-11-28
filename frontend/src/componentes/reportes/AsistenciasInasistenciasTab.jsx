@@ -64,7 +64,7 @@ const CATEGORY_CONFIG = {
     label: "Inasistencias",
     color: "rgba(220,53,69,0.9)",
     borderColor: "rgba(220,53,69,1)",
-    matcher: estado => estado !== "atendido",
+    matcher: estado => ["cancelado_paciente", "cancelado_medico", "ausente"].includes(estado),
     emptyMessage: "No hubo inasistencias en el período seleccionado.",
   },
 };
@@ -129,19 +129,28 @@ const AsistenciasInasistenciasTab = () => {
   }, [turnos, filters]);
 
   const categories = useMemo(() => {
-    const normalized = filteredTurnos.map(turno => ({
-      ...turno,
-      estado_normalizado: turno.estado?.toLowerCase() ?? "",
-    }));
+    const normalized = filteredTurnos.map(turno => {
+      const estado = turno.estado ?? "";
+      return {
+        ...turno,
+        estado_normalizado: estado.toString().trim().toLowerCase(),
+      };
+    });
 
     const asistencias = normalized.filter(t => CATEGORY_CONFIG.asistencias.matcher(t.estado_normalizado));
     const inasistencias = normalized.filter(t => CATEGORY_CONFIG.inasistencias.matcher(t.estado_normalizado));
 
+    // ignorar explícitamente los estados que no entren en ninguna categoría (ej: asignado)
     return {
       asistencias,
       inasistencias,
     };
   }, [filteredTurnos]);
+
+  const relevantTurnos = useMemo(
+    () => [...categories.asistencias, ...categories.inasistencias],
+    [categories],
+  );
 
   const pieData = useMemo(() => {
     return {
@@ -321,7 +330,7 @@ const AsistenciasInasistenciasTab = () => {
                           </tr>
                         </thead>
                         <tbody>
-                          {(selectedCategory ? selectedTurnos : filteredTurnos).map(turno => (
+                          {(selectedCategory ? selectedTurnos : relevantTurnos).map(turno => (
                             <tr key={turno.id}>
                               <td>
                                 {turno.paciente_apellido}, {turno.paciente_nombre}
