@@ -216,23 +216,23 @@ npm run dev
 8) Notas
 
 # Backend
-Framework: FastAPI
-Validación: Pydantic
-Base de datos: MySQL 8
-Acceso a datos: mysql-connector-python (SQL directo, sin ORM)
-Conexiones: Singleton + pool
-Notificaciones: FastAPI-Mail (SMTP)
-Reportes PDF: ReportLab
-Patrones: Singleton + Observer (event bus + listeners)
-Lógica de turnos: agenda, disponibilidad, solapamientos, estados
+Framework: FastAPI,
+Validación: Pydantic,
+Base de datos: MySQL 8,
+Acceso a datos: mysql-connector-python (SQL directo, sin ORM),
+Conexiones: Singleton + pool,
+Notificaciones: FastAPI-Mail (SMTP),
+Reportes PDF: ReportLab,
+Patrones: Singleton + Observer (event bus + listeners),
+Lógica de turnos: agenda, disponibilidad, solapamientos, estados.
 
 # Frontend
-React + Vite
-Bootstrap 5
-Chart.js (gráficos)
-html2canvas + jsPDF (exportación PDF)
-Fetch para consumir el backend (wrapper opcional)
-Componentización modular (formularios, tablas, reportes)
+React + Vite,
+Bootstrap 5,
+Chart.js (gráficos),
+html2canvas + jsPDF (exportación PDF),
+Fetch para consumir el backend (wrapper opcional),
+Componentización modular (formularios, tablas, reportes).
 
 # Base de datos
 MySQL 8, esquema listo en backend/sql/turnosMedicos.sql.
