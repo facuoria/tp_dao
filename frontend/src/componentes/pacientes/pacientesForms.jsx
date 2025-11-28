@@ -47,7 +47,7 @@ export default function PacienteForm({ onSuccess, editingPaciente, onCancelEdit 
   // VALIDACIONES
   // ----------------------------
   const isValidDni = useMemo(
-    () => form.dni.trim() !== "" && !isNaN(Number(form.dni)),
+    () => /^\d{7,10}$/.test(form.dni.trim()),
     [form.dni]
   );
 
@@ -297,3 +297,5 @@ export default function PacienteForm({ onSuccess, editingPaciente, onCancelEdit 
     </div>
   );
 }
+
+

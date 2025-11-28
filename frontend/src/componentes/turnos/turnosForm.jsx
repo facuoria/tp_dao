@@ -359,17 +359,19 @@ export default function TurnosForm({ onSuccess, editingTurno, onCancelEdit }) {
               <div className="col-md-6">
                 <div className="form-floating">
                   <select
-                    className={`form-select ${touched.estado_turno_id && errors.estado_turno_id ? "is-invalid" : ""}`}
-                    name="estado_turno_id"
-                    value={form.estado_turno_id}
-                    onChange={handleChange}
-                    onBlur={() => markTouched("estado_turno_id")}
-                  >
-                    <option value="">Seleccionar...</option>
-                    {estados.map(e => (
-                      <option key={e.id} value={e.id}>{e.nombre}</option>
-                    ))}
-                  </select>
+                className={`form-select ${touched.estado_turno_id && errors.estado_turno_id ? "is-invalid" : ""}`}
+                name="estado_turno_id"
+                value={form.estado_turno_id}
+                onChange={handleChange}
+                onBlur={() => markTouched("estado_turno_id")}
+              >
+                <option value="">Seleccionar...</option>
+                {estados
+                  .filter(e => (!isEdit ? e.nombre.toLowerCase() === "asignado" : true))
+                  .map(e => (
+                    <option key={e.id} value={e.id}>{e.nombre}</option>
+                  ))}
+              </select>
                   <label>Estado</label>
                   <div className="invalid-feedback">{errors.estado_turno_id}</div>
                 </div>
