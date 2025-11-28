@@ -10,7 +10,7 @@ Node 18+ y npm
 
 ⚡️ Guía Rápida (si ya tenés todo instalado)
 # 1) Base de datos
-mysql -u root -p < backend/sql/schema.sql
+mysql -u root -p < backend/sql/turnosMedicos.sql
 
 # 2) Backend
 cd backend
@@ -20,15 +20,15 @@ python -m venv .venv
 pip install -r requirements.txt
 # crear .env desde la plantilla
 # Win: copy .env.example .env    |   Mac/Linux: cp .env.example .env
-# editar backend/.env con tus credenciales
+# editar backend/.env completando con tus credenciales
+# levantar la API
 uvicorn app.main:app --reload --port 8000
 
 # 3) Frontend
 cd ../frontend
 npm install
 # crear .env.local con:
-# NEXT_PUBLIC_API_URL=http://localhost:8000
-# NEXT_PUBLIC_USE_MSW=0
+# VITE_API_URL=http://localhost:8000
 npm run dev
 
 
@@ -43,7 +43,7 @@ Opción A — con MySQL Workbench (GUI)
 
 Abrí Workbench y conectate.
 
-File → Open SQL Script… → abrí backend/sql/schema.sql.
+File → Open SQL Script… → abrí backend/sql/turnosMedicos.sql.
 
 Ejecutá (ícono del rayo).
 Se crea la base turnosMedicos con tablas e inserts de estados.
@@ -58,18 +58,18 @@ Opción B — por consola
 
 Windows (CMD/PowerShell):
 
-mysql -u root -p < backend\sql\schema.sql
+mysql -u root -p < backend\sql\turnosMedicos.sql
 
 
 macOS / Linux:
 
-mysql -u root -p < backend/sql/schema.sql
+mysql -u root -p < backend/sql/turnosMedicos.sql
 
 Opción C — con Docker (si no tenés MySQL)
 docker run --name mysql8 -e MYSQL_ROOT_PASSWORD=secret -p 3306:3306 -d mysql:8 \
   --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
 
-docker exec -i mysql8 mysql -uroot -psecret < backend/sql/schema.sql
+docker exec -i mysql8 mysql -uroot -psecret < backend/sql/turnosMedicos.sql
 
 # Usuario opcional (acceso desde cualquier host):
 docker exec -it mysql8 mysql -uroot -psecret -e "\
@@ -129,17 +129,11 @@ Verificá en http://localhost:8000/docs
 
 💡 Si VS Code te marca en rojo pydantic, elegí el intérprete del venv (te sale un cartelito “We noticed a new environment…” → Yes).
 
-3) Frontend (Next.js)
+3) Frontend (React + Vite)
 
 Crear frontend/.env.local:
 
-NEXT_PUBLIC_API_URL=http://localhost:8000
-NEXT_PUBLIC_USE_MSW=0
-
-
-NEXT_PUBLIC_API_URL = URL del backend.
-
-NEXT_PUBLIC_USE_MSW=0 = usa backend real (si ponés 1, usa la Fake API MSW).
+Agregar VITE_API_URL=http://localhost:8000
 
 Instalar y correr:
 
@@ -163,9 +157,10 @@ http://localhost:8000/api/...
 En la terminal del backend verás logs tipo GET /api/pacientes 200.
 
 Si ves http://localhost:3000/api/..., el front aún no usa el backend real.
-Revisá .env.local, reiniciá npm run dev y asegurate de usar el helper que arma la URL base (ya viene en frontend/lib/api/client.ts).
+Revisá .env.local, reiniciá npm run dev y asegurate de usar el helper que arma la URL base.
 
 4) Datos de prueba (opcional)
+Ejecutar en MySQL Workbench
 USE turnosMedicos;
 
 INSERT INTO especialidades (nombre) VALUES ('Clínica Médica');
@@ -179,27 +174,7 @@ VALUES ('32123456','Juan','Pérez','juan@example.com');
 
 Ahora podés crear turnos (lunes por la mañana para evitar rechazos por agenda).
 
-5) Cambiar entre Backend real y Fake API (MSW)
-
-Backend real (persistencia en MySQL):
-
-NEXT_PUBLIC_API_URL=http://localhost:8000
-NEXT_PUBLIC_USE_MSW=0
-
-
-Fake API (MSW) (para maqueta rápida, sin BD):
-
-NEXT_PUBLIC_API_URL=
-NEXT_PUBLIC_USE_MSW=1
-
-
-Reiniciá el front.
-(Si un Service Worker viejo molesta, en DevTools → Application → Service Workers → Unregister.)
-
-6) Problemas comunes
-
-Veo datos en la web pero no en MySQL
-El front usa MSW. Poné NEXT_PUBLIC_USE_MSW=0 y reiniciá.
+5) Problemas comunes
 
 CORS en el navegador
 FRONTEND_ORIGINS=http://localhost:3000 en backend/.env. Reiniciá el back.
@@ -216,7 +191,7 @@ Seleccioná el intérprete backend/.venv en VS Code y corré pip install -r requ
 
 Puerto en uso
 Cambiá el back: uvicorn app.main:app --reload --port 8001
-y el front: NEXT_PUBLIC_API_URL=http://localhost:8001.
+y el front: VITE_API_URL=http://localhost:8001.
 
 7) Comandos útiles
 
@@ -240,8 +215,24 @@ npm run dev
 
 8) Notas
 
-Backend: FastAPI, SQL directo con mysql-connector-python (sin ORM), DTOs con Pydantic, reglas de negocio (agenda y solapamiento de turnos).
+# Backend
+Framework: FastAPI
+Validación: Pydantic
+Base de datos: MySQL 8
+Acceso a datos: mysql-connector-python (SQL directo, sin ORM)
+Conexiones: Singleton + pool
+Notificaciones: FastAPI-Mail (SMTP)
+Reportes PDF: ReportLab
+Patrones: Singleton + Observer (event bus + listeners)
+Lógica de turnos: agenda, disponibilidad, solapamientos, estados
 
-Frontend: Next.js (App Router) + TailwindCSS; las llamadas usan NEXT_PUBLIC_API_URL para apuntar al backend.
+# Frontend
+React + Vite
+Bootstrap 5
+Chart.js (gráficos)
+html2canvas + jsPDF (exportación PDF)
+Fetch para consumir el backend (wrapper opcional)
+Componentización modular (formularios, tablas, reportes)
 
-Base de datos: MySQL 8, esquema listo en backend/sql/schema.sql.
+# Base de datos
+MySQL 8, esquema listo en backend/sql/turnosMedicos.sql.
