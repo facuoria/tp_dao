@@ -81,16 +81,31 @@ def create_medico(nombre, apellido, matricula, mail, especialidad_id):
 
 
 def delete_medico(medico_id: int) -> int:
-    sql = "DELETE FROM medicos WHERE id = %s"
+    """
+    Borrado en cascada manual:
+      - recetas del médico
+      - turnos del médico
+      - agenda del médico
+      - médico
+    """
     conn = None
     cur = None
     try:
         conn = get_connection()
         cur = conn.cursor()
-        cur.execute(sql, (medico_id,))
+
+        cur.execute("DELETE FROM recetas WHERE medicos_id = %s", (medico_id,))
+        cur.execute("DELETE FROM turnos WHERE medicos_id = %s", (medico_id,))
+        cur.execute("DELETE FROM agenda_medico WHERE medicos_id = %s", (medico_id,))
+        cur.execute("DELETE FROM medicos WHERE id = %s", (medico_id,))
+
         afectados = cur.rowcount
         conn.commit()
         return afectados
+    except mysql.connector.Error as e:
+        if conn:
+            conn.rollback()
+        raise
     finally:
         if cur:
             cur.close()

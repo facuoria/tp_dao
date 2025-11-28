@@ -69,7 +69,7 @@ export default function TurnosTabla({ reloadKey, onEdit }) {
           <p className="text-muted small">Listado de turnos cargados.</p>
         </div>
 
-        <div className="d-flex gap-2 flex-wrap align-items-center">
+        <div className="d-flex gap-2 align-items-center">
           <input
             className="form-control form-control-sm"
             style={{ minWidth: "180px", maxWidth: "220px" }}

@@ -54,7 +54,7 @@ export default function EspecialidadesTabla({ reloadKey }) {
           </p>
         </div>
 
-        <div className="d-flex gap-2">
+        <div className="d-flex gap-2 align-items-center">
           <input
             className="form-control form-control-sm"
             style={{ minWidth: "180px", maxWidth: "220px" }}
